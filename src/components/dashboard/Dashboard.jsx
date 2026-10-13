@@ -23,7 +23,7 @@ export default function Dashboard() {
       {/* Top Banner Header */}
       <div className="page-header">
         <div className="page-title-block">
-          <h1>Culinary Operations Dashboard</h1>
+          <h1>The Place Operations Dashboard</h1>
           <p>Real-time analytics, revenue intelligence, and delivery dispatch metrics</p>
         </div>
 

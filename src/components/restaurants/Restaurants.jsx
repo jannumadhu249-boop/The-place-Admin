@@ -93,10 +93,15 @@ export default function Restaurants() {
                 <tr key={rest.id}>
                   <td>
                     <div className="table-entity-cell">
-                      <img src={rest.image} alt={rest.name} className="entity-thumb" />
+                      <img src={rest.logo || rest.image} alt={rest.name} className="entity-thumb" />
                       <div className="entity-info">
                         <h5>{rest.name}</h5>
                         <p>{rest.cuisine}</p>
+                        {rest.tinNumber && (
+                          <span style={{ fontSize: 11, color: '#059669', background: '#ecfdf5', padding: '1px 6px', borderRadius: 4, display: 'inline-block', marginTop: 2, fontWeight: 600 }}>
+                            TIN: {rest.tinNumber}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>

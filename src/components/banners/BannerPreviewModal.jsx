@@ -1,10 +1,28 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, Smartphone, Monitor, MapPin, Calendar, Link2, Sparkles } from 'lucide-react';
+import { X, ExternalLink, Smartphone, Monitor, MapPin, Calendar, Link2, Sparkles, Tag } from 'lucide-react';
+import { getBannerImageUrl } from './EditBannerModal';
+
+function formatDateDisplay(d) {
+  if (!d) return '—';
+  try {
+    return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  } catch {
+    return d;
+  }
+}
 
 export default function BannerPreviewModal({ banner, isOpen, onClose }) {
   const [deviceMode, setDeviceMode] = useState('mobile'); // 'mobile' | 'desktop'
 
   if (!isOpen || !banner) return null;
+
+  const title = banner.name || banner.title || 'Promotional Campaign';
+  const imgUrl = getBannerImageUrl(banner.image);
+  const zoneName = banner.zone || 'All Delivery Zones';
+  const redirectLink = banner.link || banner.redirectUrl || '/restaurants/featured';
+  const startDateStr = formatDateDisplay(banner.fromDate || banner.startDate);
+  const endDateStr = formatDateDisplay(banner.toDate || banner.endDate);
+  const isActive = banner.status === 'active' || banner.status === 'Active';
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -29,7 +47,7 @@ export default function BannerPreviewModal({ banner, isOpen, onClose }) {
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: 17 }}>Customer App Banner Simulation</h3>
-              <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>Live customer preview & interaction simulator</p>
+              <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>Live customer preview &amp; interaction simulator</p>
             </div>
           </div>
 
@@ -106,7 +124,7 @@ export default function BannerPreviewModal({ banner, isOpen, onClose }) {
                 padding: '0 8px'
               }}>
                 <span>9:41</span>
-                <span>Gourmet Express App</span>
+                <span>The Place Food Delivery</span>
                 <span>5G 100%</span>
               </div>
             )}
@@ -119,10 +137,10 @@ export default function BannerPreviewModal({ banner, isOpen, onClose }) {
               boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
               position: 'relative'
             }}>
-              <div style={{ position: 'relative', height: deviceMode === 'mobile' ? 180 : 260, overflow: 'hidden' }}>
+              <div style={{ position: 'relative', height: deviceMode === 'mobile' ? 190 : 270, overflow: 'hidden' }}>
                 <img
-                  src={banner.image}
-                  alt={banner.title}
+                  src={imgUrl}
+                  alt={title}
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
                 <div style={{
@@ -147,26 +165,26 @@ export default function BannerPreviewModal({ banner, isOpen, onClose }) {
                     alignSelf: 'flex-start',
                     marginBottom: 6
                   }}>
-                    {banner.category}
+                    Priority #{banner.priority || '1'}
                   </span>
 
                   <h3 style={{
                     color: '#ffffff',
                     margin: '0 0 6px 0',
-                    fontSize: deviceMode === 'mobile' ? 16 : 22,
+                    fontSize: deviceMode === 'mobile' ? 17 : 22,
                     fontWeight: 800,
                     lineHeight: 1.25,
                     textShadow: '0 2px 4px rgba(0,0,0,0.5)'
                   }}>
-                    {banner.title}
+                    {title}
                   </h3>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: 'rgba(255,255,255,0.85)', fontSize: 11.5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'rgba(255,255,255,0.85)', fontSize: 11.5 }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <MapPin size={12} color="#f59e0b" /> {banner.zone}
+                      <MapPin size={12} color="#f59e0b" /> {zoneName}
                     </span>
                     <span>&bull;</span>
-                    <span>Tap to explore menu &rarr;</span>
+                    <span>Tap to explore &rarr;</span>
                   </div>
                 </div>
               </div>
@@ -186,21 +204,21 @@ export default function BannerPreviewModal({ banner, isOpen, onClose }) {
             fontSize: 12.5
           }}>
             <div>
-              <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 600 }}>TARGET REGION</span>
-              <strong style={{ color: '#0f172a' }}>{banner.zone}</strong>
+              <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 600 }}>TARGET ZONE</span>
+              <strong style={{ color: '#0f172a' }}>{zoneName}</strong>
             </div>
             <div>
               <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 600 }}>SCHEDULE DATES</span>
-              <strong style={{ color: '#0f172a' }}>{banner.startDate} → {banner.endDate}</strong>
+              <strong style={{ color: '#0f172a' }}>{startDateStr} &rarr; {endDateStr}</strong>
             </div>
             <div>
               <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 600 }}>DEEP-LINK ACTION</span>
-              <span style={{ color: '#0284c7', fontWeight: 600 }}>{banner.redirectUrl}</span>
+              <span style={{ color: '#0284c7', fontWeight: 600, wordBreak: 'break-all' }}>{redirectLink}</span>
             </div>
             <div>
               <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 600 }}>STATUS</span>
-              <span className={`badge ${banner.status === 'Active' ? 'badge-delivered' : 'badge-pending'}`}>
-                {banner.status}
+              <span className={`badge ${isActive ? 'badge-delivered' : 'badge-pending'}`} style={{ textTransform: 'capitalize' }}>
+                {banner.status || 'active'}
               </span>
             </div>
           </div>
@@ -211,7 +229,7 @@ export default function BannerPreviewModal({ banner, isOpen, onClose }) {
             Close Preview
           </button>
           <a
-            href={banner.image}
+            href={imgUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="btn btn-primary"

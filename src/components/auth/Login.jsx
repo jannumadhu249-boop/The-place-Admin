@@ -1,45 +1,96 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { UtensilsCrossed, Lock, Mail, Eye, EyeOff, ShieldCheck, ChefHat, Sparkles, ArrowRight } from 'lucide-react';
+import {
+  UtensilsCrossed, Lock, Mail, Eye, EyeOff,
+  ChefHat, Sparkles, ArrowRight, AlertCircle
+} from 'lucide-react';
 import loginHeroImg from '../../assets/login-hero.jpg';
+import { URLS } from '../../url';
 import '../../styles/auth.css';
 
 export default function Login({ onLogin }) {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('admin@foodexpress.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      onLogin({ email, role: 'Super Admin', name: 'Alexandria Montgomery' });
-    }, 600);
+  // ── Validations ────────────────────────────────────────────
+  const validate = () => {
+    if (!email.trim()) return 'Please enter your email address.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return 'Please enter a valid email address.';
+    if (!password) return 'Please enter your password.';
+    if (password.length < 6) return 'Password must be at least 6 characters.';
+    return null;
   };
 
-  const handleQuickDemo = (roleEmail, roleName) => {
-    setEmail(roleEmail);
-    setPassword('secret123');
+  // ── API Call ───────────────────────────────────────────────
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    const validationError = validate();
+    if (validationError) { setError(validationError); return; }
+
+    setIsLoading(true);
+    try {
+      const res = await fetch(URLS.Login, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.status === false || data.success === false) {
+        setError(data.message || 'Invalid credentials. Please try again.');
+        return;
+      }
+
+      // Store token
+      const token = data?.token || data?.data?.token || '';
+      const u = data?.user || data?.data?.user || data?.data || {};
+      const userData = {
+        id: u._id || '',
+        email: u.email || email,
+        name: u.name || 'Admin',
+        role: u.department || u.role || 'Super Admin',
+        phone: u.phone || '',
+        avatar: u.image
+          ? (u.image.startsWith('http') ? u.image : URLS.ImageUrl + u.image)
+          : (u.profilePic ? (u.profilePic.startsWith('http') ? u.profilePic : URLS.ImageUrl + u.profilePic) : null),
+        token,
+      };
+
+      if (token) {
+        const storage = rememberMe ? localStorage : sessionStorage;
+        storage.setItem('admin_token', token);
+        storage.setItem('admin_user', JSON.stringify(userData));
+      }
+
+      // Pass user data up to App
+      onLogin(userData);
+
+    } catch (err) {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="auth-wrapper">
-      {/* Left Pane - Restaurant Interior Image & Brand Hero */}
-      <div 
-        className="auth-hero-pane" 
-        style={{ backgroundImage: `url(${loginHeroImg})` }}
-      >
+      {/* Left Pane */}
+      <div className="auth-hero-pane" style={{ backgroundImage: `url(${loginHeroImg})` }}>
         <div className="auth-hero-content auth-brand">
           <div className="auth-brand-badge">
             <UtensilsCrossed size={24} />
           </div>
           <div className="auth-brand-text">
             <h1>The Place</h1>
-            <p>Culinary Food & Delivery</p>
+            <p>Culinary Food &amp; Delivery</p>
           </div>
         </div>
 
@@ -48,25 +99,21 @@ export default function Login({ onLogin }) {
             Next-Generation <span>Food Logistics</span>
           </h2>
           <p>
-            Real-time kitchen order dispatching, multi-zone delivery tracking, automated 
+            Real-time kitchen order dispatching, multi-zone delivery tracking, automated
             restaurant disbursements, and Michelin-tier dining experiences at scale.
           </p>
         </div>
 
         <div className="auth-hero-stats">
           <div className="hero-stat-card">
-            <div className="hero-stat-icon">
-              <ChefHat size={22} />
-            </div>
+            <div className="hero-stat-icon"><ChefHat size={22} /></div>
             <div className="hero-stat-info">
               <h4>185+ Places</h4>
               <p>Active Culinary Partners</p>
             </div>
           </div>
           <div className="hero-stat-card">
-            <div className="hero-stat-icon">
-              <Sparkles size={22} />
-            </div>
+            <div className="hero-stat-icon"><Sparkles size={22} /></div>
             <div className="hero-stat-info">
               <h4>99.4%</h4>
               <p>On-Time Delivery SLA</p>
@@ -75,7 +122,7 @@ export default function Login({ onLogin }) {
         </div>
       </div>
 
-      {/* Right Pane - Luxury Login Form */}
+      {/* Right Pane */}
       <div className="auth-form-pane">
         <div className="auth-form-card">
           <div className="auth-header">
@@ -83,17 +130,31 @@ export default function Login({ onLogin }) {
             <p>Enter your administrator credentials to access the control suite</p>
           </div>
 
+          {/* Error alert */}
+          {error && (
+            <div style={{
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+              background: '#fef2f2', border: '1px solid #fecaca',
+              borderRadius: 10, padding: '10px 12px',
+              fontSize: 13, fontWeight: 500, color: '#dc2626',
+              lineHeight: 1.5, marginBottom: 16,
+            }}>
+              <AlertCircle size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>{error}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="auth-form">
             <div className="form-group">
-              <label>Administrator Email / Username</label>
+              <label>Administrator Email</label>
               <div className="input-icon-wrapper">
                 <Mail className="field-icon" size={18} />
                 <input
                   type="email"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@foodexpress.com"
+                  onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                  placeholder="admin@example.com"
                 />
               </div>
             </div>
@@ -106,7 +167,7 @@ export default function Login({ onLogin }) {
                   type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="••••••••••••"
                 />
                 <button
@@ -129,7 +190,6 @@ export default function Login({ onLogin }) {
                 />
                 <span>Remember this device</span>
               </label>
-
               <button
                 type="button"
                 className="forgot-link"
@@ -145,13 +205,10 @@ export default function Login({ onLogin }) {
               className="btn btn-primary auth-submit-btn"
             >
               {isLoading ? 'Authenticating...' : (
-                <>
-                  Sign In to Dashboard <ArrowRight size={17} />
-                </>
+                <><ArrowRight size={17} /> Sign In to Dashboard</>
               )}
             </button>
           </form>
-
         </div>
       </div>
     </div>

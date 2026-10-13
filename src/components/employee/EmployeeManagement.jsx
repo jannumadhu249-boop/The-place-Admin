@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import EmployeeList from './EmployeeList';
 import EmployeeRole from './EmployeeRole';
 import AddNewEmployee from './AddNewEmployee';
-import { Users, Shield, UserPlus } from 'lucide-react';
+import Departments from '../departments/Departments';
+import { Users, Shield, UserPlus, Building2 } from 'lucide-react';
 
 export default function EmployeeManagement() {
-  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'role' | 'add'
+  const [activeTab, setActiveTab] = useState('list');
 
   return (
     <div>
@@ -28,16 +29,24 @@ export default function EmployeeManagement() {
           </button>
           <button
             type="button"
+            className={`toolbar-tab-item ${activeTab === 'departments' ? 'active' : ''}`}
+            onClick={() => setActiveTab('departments')}
+          >
+            <Building2 size={15} /> Departments
+          </button>
+          {/* <button
+            type="button"
             className={`toolbar-tab-item ${activeTab === 'add' ? 'active' : ''}`}
             onClick={() => setActiveTab('add')}
           >
             <UserPlus size={15} /> Add New Employee
-          </button>
+          </button> */}
         </div>
       </div>
 
       {activeTab === 'list' && <EmployeeList onNavigateAdd={() => setActiveTab('add')} />}
       {activeTab === 'role' && <EmployeeRole />}
+      {activeTab === 'departments' && <Departments />}
       {activeTab === 'add' && <AddNewEmployee onBackToList={() => setActiveTab('list')} />}
     </div>
   );

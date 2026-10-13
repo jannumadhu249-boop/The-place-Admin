@@ -1,8 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Store, Image, DollarSign, MapPin, Phone, Mail } from 'lucide-react';
+import { 
+  X, 
+  CheckCircle, 
+  Store, 
+  FileText, 
+  ShieldCheck, 
+  Lock, 
+  Upload, 
+  Image as ImageIcon, 
+  Calendar, 
+  Clock, 
+  User, 
+  Phone, 
+  Mail, 
+  MapPin, 
+  AlertCircle 
+} from 'lucide-react';
 
 export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState(null);
+  const [passwordError, setPasswordError] = useState('');
 
   useEffect(() => {
     if (restaurant) {
@@ -13,41 +30,92 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
         phone: restaurant.phone || '+1 (555) 234-5678',
         email: restaurant.email || 'contact@restaurant.com',
         address: restaurant.address || '452 Culinary Ave, NY',
+        cuisine: restaurant.cuisine || 'Continental, Bistro',
+        estimatedDeliveryTime: restaurant.estimatedDeliveryTime || '20-30 min',
+        logo: restaurant.logo || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&auto=format&fit=crop&q=80',
+        image: restaurant.image || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=600&auto=format&fit=crop&q=80',
+        tinNumber: restaurant.tinNumber || 'TIN-98234-881A',
+        expiryDate: restaurant.expiryDate || '2027-12-31',
+        tinCertificate: restaurant.tinCertificate || '',
+        tinCertificateName: restaurant.tinCertificateName || (restaurant.tinCertificate ? 'TIN_Certificate.pdf' : ''),
+        licenceDocument: restaurant.licenceDocument || '',
+        licenceDocumentName: restaurant.licenceDocumentName || (restaurant.licenceDocument ? 'Business_Licence.pdf' : ''),
+        ownerName: restaurant.ownerName || 'Executive Chef',
+        ownerPhoneNumber: restaurant.ownerPhoneNumber || '+1 (555) 998-1122',
+        openingTime: restaurant.openingTime || '09:00',
+        closingTime: restaurant.closingTime || '22:00',
+        password: '',
+        confirmPassword: '',
+        isOpen: restaurant.isOpen !== undefined ? restaurant.isOpen : true
       });
+      setPasswordError('');
     }
   }, [restaurant]);
 
   if (!isOpen || !formData) return null;
 
+  const handleFileUpload = (field, nameField, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({
+        ...prev,
+        [field]: reader.result,
+        [nameField]: file.name
+      }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({
+    if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
+      setPasswordError('Passwords do not match. Please ensure both passwords match.');
+      return;
+    }
+    setPasswordError('');
+
+    const updated = {
       ...formData,
-      commissionRate: Number(formData.commissionRate)
-    });
+      commissionRate: Number(formData.commissionRate) || 15
+    };
+    // Don't overwrite password with empty if unchanged
+    if (!formData.password) {
+      delete updated.password;
+      delete updated.confirmPassword;
+    }
+
+    onSave(updated);
     onClose();
+  };
+
+  const set = (field, val) => {
+    setFormData(prev => ({ ...prev, [field]: val }));
+    if (field === 'password' || field === 'confirmPassword') {
+      setPasswordError('');
+    }
   };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog" style={{ maxWidth: 640 }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-dialog" style={{ maxWidth: 760, width: '92%' }} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 8,
-              background: '#fff1f2',
-              color: '#be123c',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              width: 40, height: 40, borderRadius: 10,
+              background: '#fff1f2', color: '#be123c',
+              display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <Store size={18} />
+              <Store size={20} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: 17 }}>Edit Restaurant Profile</h3>
-              <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{formData.id} &bull; {formData.name}</p>
+              <h3 style={{ margin: 0, fontSize: 18 }}>Edit Restaurant Profile</h3>
+              <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
+                {formData.id} &bull; <span style={{ fontWeight: 600, color: '#0f172a' }}>{formData.name}</span>
+              </p>
             </div>
           </div>
           <button type="button" className="btn-icon" onClick={onClose}>
@@ -55,156 +123,452 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
           </button>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Restaurant Cover Banner Preview */}
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center', padding: '12px 14px', background: '#f8fafc', borderRadius: 10, border: '1px solid #e2e8f0' }}>
-              <img
-                src={formData.image}
-                alt={formData.name}
-                style={{ width: 72, height: 72, borderRadius: 8, objectFit: 'cover', border: '1px solid #cbd5e1' }}
-              />
-              <div style={{ flex: 1 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: '#475569', marginBottom: 4, display: 'block' }}>
-                  Image URL / Storefront Thumbnail
-                </label>
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="form-control-input"
-                  style={{ fontSize: 12.5 }}
-                />
-              </div>
-            </div>
+        {/* Form Body */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: '22px 26px' }}>
 
-            <div className="modal-grid">
-              <div className="form-group">
-                <label>Restaurant Name</label>
-                <input
-                  type="text"
-                  required
-                  className="form-control-input"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Cuisine / Category</label>
-                <input
-                  type="text"
-                  required
-                  className="form-control-input"
-                  value={formData.cuisine}
-                  onChange={(e) => setFormData({ ...formData, cuisine: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="modal-grid">
-              <div className="form-group">
-                <label>Assigned Delivery Zone</label>
-                <select
-                  className="form-control-input"
-                  value={formData.zone}
-                  onChange={(e) => setFormData({ ...formData, zone: e.target.value })}
-                >
-                  <option value="Zone 1 - Downtown Core">Zone 1 - Downtown Core</option>
-                  <option value="Zone 2 - West District">Zone 2 - West District</option>
-                  <option value="Zone 3 - Midtown Central">Zone 3 - Midtown Central</option>
-                  <option value="Zone 4 - Brooklyn North">Zone 4 - Brooklyn North</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label>Platform Commission (%)</label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    type="number"
-                    min="5"
-                    max="50"
-                    step="1"
-                    required
-                    className="form-control-input"
-                    value={formData.commissionRate}
-                    onChange={(e) => setFormData({ ...formData, commissionRate: e.target.value })}
-                  />
-                  <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', color: '#64748b', fontSize: 13 }}>
-                    %
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-grid">
-              <div className="form-group">
-                <label>Contact Phone</label>
-                <input
-                  type="text"
-                  required
-                  className="form-control-input"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Merchant Email</label>
-                <input
-                  type="email"
-                  required
-                  className="form-control-input"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label>Physical Address</label>
-              <input
-                type="text"
-                required
-                className="form-control-input"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-            </div>
-
+            {/* Kitchen Live Order Acceptance Toggle */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '12px 16px',
-              background: '#f8fafc',
-              borderRadius: 8,
-              border: '1px solid #e2e8f0'
+              padding: '14px 18px',
+              background: formData.isOpen ? '#f0fdf4' : '#f8fafc',
+              borderRadius: 10,
+              border: formData.isOpen ? '1px solid #bbf7d0' : '1px solid #e2e8f0'
             }}>
               <div>
-                <strong style={{ fontSize: 13, color: '#0f172a' }}>Kitchen Acceptance Status</strong>
+                <strong style={{ fontSize: 13.5, color: '#0f172a' }}>Kitchen Acceptance Status</strong>
                 <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
-                  Toggle whether this restaurant is currently accepting live delivery orders
+                  {formData.isOpen ? 'Restaurant is actively taking customer orders' : 'Kitchen is currently paused / offline'}
                 </p>
               </div>
               <label className="toggle-switch">
                 <input
                   type="checkbox"
                   checked={formData.isOpen}
-                  onChange={(e) => setFormData({ ...formData, isOpen: e.target.checked })}
+                  onChange={(e) => set('isOpen', e.target.checked)}
                 />
                 <span className="slider"></span>
               </label>
             </div>
+
+            {/* SECTION 1: General Information */}
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Store size={16} color="#be123c" />
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  1. General Restaurant Information
+                </h4>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Restaurant Name *</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control-input"
+                      value={formData.name}
+                      onChange={(e) => set('name', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Cuisine Category *</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control-input"
+                      value={formData.cuisine}
+                      onChange={(e) => set('cuisine', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Assigned Delivery Zone *</label>
+                    <select
+                      className="form-control-input"
+                      required
+                      value={formData.zone}
+                      onChange={(e) => set('zone', e.target.value)}
+                    >
+                      <option value="Zone 1 - Downtown Core">Zone 1 - Downtown Core</option>
+                      <option value="Zone 2 - West District">Zone 2 - West District</option>
+                      <option value="Zone 3 - Midtown Central">Zone 3 - Midtown Central</option>
+                      <option value="Zone 4 - Brooklyn North">Zone 4 - Brooklyn North</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Platform Commission (%) *</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      required
+                      className="form-control-input"
+                      value={formData.commissionRate}
+                      onChange={(e) => set('commissionRate', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Contact Phone *</label>
+                    <input
+                      type="text"
+                      required
+                      className="form-control-input"
+                      value={formData.phone}
+                      onChange={(e) => set('phone', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Estimated Delivery Time</label>
+                    <input
+                      type="text"
+                      className="form-control-input"
+                      value={formData.estimatedDeliveryTime}
+                      onChange={(e) => set('estimatedDeliveryTime', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>Physical Address *</label>
+                  <input
+                    type="text"
+                    required
+                    className="form-control-input"
+                    value={formData.address}
+                    onChange={(e) => set('address', e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 2: Restaurant Branding & Media */}
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <ImageIcon size={16} color="#0284c7" />
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  2. Branding &amp; Storefront Media
+                </h4>
+              </div>
+
+              <div className="modal-grid">
+                {/* Restaurant Logo */}
+                <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Store size={14} color="#be123c" /> Restaurant Logo *
+                  </label>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{
+                      width: 54, height: 54, borderRadius: 8,
+                      background: '#e2e8f0', border: '1px solid #cbd5e1',
+                      overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      {formData.logo ? (
+                        <img src={formData.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <ImageIcon size={22} color="#94a3b8" />
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="edit-logo-upload"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleFileUpload('logo', 'logoName', e)}
+                      />
+                      <label htmlFor="edit-logo-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
+                        <Upload size={13} /> Change Logo Image
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Logo Image URL"
+                        className="form-control-input"
+                        style={{ fontSize: 12, padding: '6px 10px' }}
+                        value={formData.logo}
+                        onChange={(e) => set('logo', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Storefront Cover Image */}
+                <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <ImageIcon size={14} color="#0284c7" /> Storefront Cover Banner *
+                  </label>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    <div style={{
+                      width: 54, height: 54, borderRadius: 8,
+                      background: '#e2e8f0', border: '1px solid #cbd5e1',
+                      overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                    }}>
+                      {formData.image ? (
+                        <img src={formData.image} alt="Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <ImageIcon size={22} color="#94a3b8" />
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        id="edit-cover-upload"
+                        style={{ display: 'none' }}
+                        onChange={(e) => handleFileUpload('image', 'imageName', e)}
+                      />
+                      <label htmlFor="edit-cover-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
+                        <Upload size={13} /> Change Banner Image
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Banner Image URL"
+                        className="form-control-input"
+                        style={{ fontSize: 12, padding: '6px 10px' }}
+                        value={formData.image}
+                        onChange={(e) => set('image', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 3: Tax Identification & Legal Documents */}
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <ShieldCheck size={16} color="#059669" />
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  3. Tax Identification (TIN) &amp; Business Licensing
+                </h4>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Taxpayer Identification Number (TIN) *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. TIN-98234-881A"
+                      className="form-control-input"
+                      value={formData.tinNumber}
+                      onChange={(e) => set('tinNumber', e.target.value)}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <Calendar size={14} color="#0284c7" />
+                      <span>Licence / TIN Expiry Date *</span>
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      className="form-control-input"
+                      value={formData.expiryDate}
+                      onChange={(e) => set('expiryDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-grid">
+                  {/* TIN Certificate */}
+                  <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                    <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <FileText size={14} color="#059669" /> TIN Certificate (Image or Document) *
+                    </label>
+                    <p style={{ margin: '0 0 10px 0', fontSize: 11.5, color: '#64748b' }}>
+                      Valid government Taxpayer Identification document
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx"
+                      id="edit-tin-upload"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleFileUpload('tinCertificate', 'tinCertificateName', e)}
+                    />
+                    <label htmlFor="edit-tin-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
+                      <Upload size={13} /> {formData.tinCertificateName ? 'Replace Certificate' : 'Upload TIN Certificate'}
+                    </label>
+                    {formData.tinCertificateName && (
+                      <div style={{ fontSize: 11.5, color: '#059669', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <FileText size={12} /> {formData.tinCertificateName}
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      placeholder="Or document URL link"
+                      className="form-control-input"
+                      style={{ fontSize: 12, padding: '6px 10px', marginTop: 6 }}
+                      value={formData.tinCertificate}
+                      onChange={(e) => set('tinCertificate', e.target.value)}
+                    />
+                  </div>
+
+                  {/* Licence Document */}
+                  <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                    <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <FileText size={14} color="#d97706" /> Licence Document *
+                    </label>
+                    <p style={{ margin: '0 0 10px 0', fontSize: 11.5, color: '#64748b' }}>
+                      Trade business / food hygiene authority licence
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf,.doc,.docx"
+                      id="edit-licence-upload"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleFileUpload('licenceDocument', 'licenceDocumentName', e)}
+                    />
+                    <label htmlFor="edit-licence-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
+                      <Upload size={13} /> {formData.licenceDocumentName ? 'Replace Licence' : 'Upload Licence Document'}
+                    </label>
+                    {formData.licenceDocumentName && (
+                      <div style={{ fontSize: 11.5, color: '#d97706', fontWeight: 600, marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <FileText size={12} /> {formData.licenceDocumentName}
+                      </div>
+                    )}
+                    <input
+                      type="text"
+                      placeholder="Or licence URL link"
+                      className="form-control-input"
+                      style={{ fontSize: 12, padding: '6px 10px', marginTop: 6 }}
+                      value={formData.licenceDocument}
+                      onChange={(e) => set('licenceDocument', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 4: Owner & Operational Hours */}
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Clock size={16} color="#7c3aed" />
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  4. Operations &amp; Owner Profile
+                </h4>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Principal Owner Name</label>
+                    <input
+                      type="text"
+                      className="form-control-input"
+                      value={formData.ownerName}
+                      onChange={(e) => set('ownerName', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Owner Direct Phone</label>
+                    <input
+                      type="text"
+                      className="form-control-input"
+                      value={formData.ownerPhoneNumber}
+                      onChange={(e) => set('ownerPhoneNumber', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Daily Opening Time</label>
+                    <input
+                      type="time"
+                      className="form-control-input"
+                      value={formData.openingTime}
+                      onChange={(e) => set('openingTime', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Daily Closing Time</label>
+                    <input
+                      type="time"
+                      className="form-control-input"
+                      value={formData.closingTime}
+                      onChange={(e) => set('closingTime', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* SECTION 5: Account Information (Merchant Credentials) */}
+            <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <Lock size={16} color="#be123c" />
+                <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                  5. Merchant Portal Account Information
+                </h4>
+              </div>
+
+              {passwordError && (
+                <div style={{
+                  padding: '10px 14px', marginBottom: 14, borderRadius: 8,
+                  background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c',
+                  display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5
+                }}>
+                  <AlertCircle size={15} /> <span>{passwordError}</span>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div className="form-group">
+                  <label>Merchant Login Email *</label>
+                  <input
+                    type="email"
+                    required
+                    className="form-control-input"
+                    value={formData.email}
+                    onChange={(e) => set('email', e.target.value)}
+                  />
+                </div>
+
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Reset Password (Optional)</label>
+                    <input
+                      type="password"
+                      placeholder="Leave blank to keep current"
+                      className="form-control-input"
+                      value={formData.password}
+                      onChange={(e) => set('password', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Confirm Reset Password</label>
+                    <input
+                      type="password"
+                      placeholder="Re-enter to confirm new password"
+                      className="form-control-input"
+                      value={formData.confirmPassword}
+                      onChange={(e) => set('confirmPassword', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
+          {/* Footer */}
           <div className="modal-footer">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
-              <CheckCircle size={15} /> Save Restaurant
+              <CheckCircle size={15} /> Save Changes
             </button>
           </div>
         </form>

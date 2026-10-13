@@ -8,10 +8,11 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
-dist-ssr
+dist/
+dist-ssr/
 dist.zip
 *.local
+*.zip
 
 # Editor directories and files
 .vscode/*

@@ -14,7 +14,15 @@ import {
   BarChart3, 
   Users, 
   ChevronLeft, 
-  ChevronRight
+  ChevronRight,
+  FolderTree,
+  Layers,
+  Utensils,
+  Building2,
+  HelpCircle,
+  Info,
+  PhoneCall,
+  FileText
 } from 'lucide-react';
 import '../../styles/layout.css';
 
@@ -33,6 +41,14 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
       group: 'Overview',
       items: [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard }
+      ]
+    },
+    {
+      group: 'My Categories',
+      items: [
+        { id: 'categories', label: 'Categories', icon: FolderTree },
+        { id: 'sub-categories', label: 'Sub Categories', icon: Layers },
+        { id: 'cuisines', label: 'Cuisines', icon: Utensils }
       ]
     },
     {
@@ -58,7 +74,17 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
       items: [
         { id: 'disbursement', label: 'Disbursements', icon: Landmark },
         { id: 'reports', label: 'Report Management', icon: BarChart3 },
-        { id: 'employee', label: 'Employee Management', icon: Users }
+        { id: 'employee', label: 'Employee Management', icon: Users },
+        // { id: 'departments', label: 'Departments', icon: Building2 }
+      ]
+    },
+    {
+      group: 'Pages & Support',
+      items: [
+        { id: 'faqs', label: 'Help & FAQs', icon: HelpCircle },
+        { id: 'about-us', label: 'About Us', icon: Info },
+        { id: 'contact-us', label: 'Contact Us', icon: PhoneCall },
+        { id: 'policies', label: 'Legal & Policies', icon: FileText }
       ]
     }
   ];
@@ -73,8 +99,8 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
           </div>
           {!isCollapsed && (
             <div className="brand-title">
-              <h2>Gourmet Admin</h2>
-              <span>Culinary Dispatch</span>
+              <h2>The Place</h2>
+              <span>Culinary Food & Delivery</span>
             </div>
           )}
         </div>
@@ -124,7 +150,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
       </div>
 
       {/* Sidebar Footer — admin info only, no logout */}
-      <div className="sidebar-footer">
+      {/* <div className="sidebar-footer">
         <img 
           src={user?.avatar || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80"} 
           alt="Admin Avatar" 
@@ -136,7 +162,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
             <span className="sidebar-user-role">{user?.role || "Super Admin"}</span>
           </div>
         )}
-      </div>
+      </div> */}
     </aside>
   );
 }
