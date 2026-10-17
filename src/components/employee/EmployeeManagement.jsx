@@ -3,7 +3,7 @@ import EmployeeList from './EmployeeList';
 import EmployeeRole from './EmployeeRole';
 import AddNewEmployee from './AddNewEmployee';
 import Departments from '../departments/Departments';
-import { Users, Shield, UserPlus, Building2 } from 'lucide-react';
+import { Users, Shield, Building2 } from 'lucide-react';
 
 export default function EmployeeManagement() {
   const [activeTab, setActiveTab] = useState('list');
@@ -34,13 +34,6 @@ export default function EmployeeManagement() {
           >
             <Building2 size={15} /> Departments
           </button>
-          {/* <button
-            type="button"
-            className={`toolbar-tab-item ${activeTab === 'add' ? 'active' : ''}`}
-            onClick={() => setActiveTab('add')}
-          >
-            <UserPlus size={15} /> Add New Employee
-          </button> */}
         </div>
       </div>
 

@@ -41,8 +41,8 @@ export default function Profile({ user, onLogout }) {
   const [success, setSuccess] = useState('');
 
   const tabs = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'security', label: 'Security' },
+    { id: 'overview', label: 'Profile' },
+    { id: 'security', label: 'Change Password' },
   ];
 
   const overviewFields = [
@@ -417,7 +417,7 @@ export default function Profile({ user, onLogout }) {
             <p style={{ fontSize: 13, color: '#64748b', marginTop: 3 }}>{formData.email}</p>
             <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fff1f2', color: '#881337', fontSize: 11.5, fontWeight: 700, padding: '3px 10px', borderRadius: 99 }}>
-                <Shield size={10} /> Super Admin
+                <Shield size={10} /> {formData.roleName || user?.roleName || user?.role || (user?.email === 'gopi@gmail.com' ? 'Super Admin' : 'Staff Member')}
               </span>
               <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#ecfdf5', color: '#15803d', fontSize: 11.5, fontWeight: 600, padding: '3px 10px', borderRadius: 99 }}>
                 ● Online

@@ -84,10 +84,13 @@ export default function Topbar({ user, onLogout }) {
 
           const freshData = {
             id: p._id || '',
-            name: p.name || 'Admin',
+            name: p.name || '',
             email: p.email || '',
             phone: p.phone || '',
-            role: p.department || p.role || 'Super Admin',
+            role: p.department || p.role || '',
+            roleName: p.roleName || p.role || '',
+            roleId: p.roleId || p.role_id || '',
+            rolesAndPermission: p.rolesAndPermission || p.permissions || [],
             avatar: fullAvatar,
             location: p.address || p.location || '',
           };
@@ -283,7 +286,7 @@ export default function Topbar({ user, onLogout }) {
                     borderRadius: 4,
                     marginTop: 4
                   }}>
-                    {currentUser?.role || "Super Admin"}
+                    {currentUser?.roleName || currentUser?.role || (currentUser?.email === 'gopi@gmail.com' ? 'Super Admin' : 'Staff Member')}
                   </span>
                 </div>
               </div>

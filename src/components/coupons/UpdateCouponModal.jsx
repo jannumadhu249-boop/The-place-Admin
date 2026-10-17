@@ -38,10 +38,12 @@ export default function UpdateCouponModal({ isOpen, coupon, onClose, onSuccess, 
 
   useEffect(() => {
     if (coupon) {
+      const rawType = (coupon.type || 'percentage').toLowerCase();
+      const initialType = (rawType === 'fixed' || rawType === 'amount') ? 'amount' : 'percentage';
       setFormData({
         code: coupon.code || '',
         name: coupon.name || coupon.title || '',
-        type: (coupon.type || 'percentage').toLowerCase(),
+        type: initialType,
         discount: coupon.discount !== undefined && coupon.discount !== null ? String(coupon.discount) : (coupon.discountValue || ''),
         limit: coupon.limit !== undefined && coupon.limit !== null ? String(coupon.limit) : (coupon.usageLimit || ''),
         fromDate: parseDateSafe(coupon.fromDate || coupon.startDate),
@@ -58,15 +60,18 @@ export default function UpdateCouponModal({ isOpen, coupon, onClose, onSuccess, 
     e.preventDefault();
     setSubmitting(true);
     try {
+      const isPercentage = formData.type === 'percentage';
+      const apiType = isPercentage ? 'percentage' : 'amount';
+
       const payload = {
         fromDate: toISODateString(formData.fromDate),
         toDate: toISODateString(formData.toDate),
         name: (formData.name || '').trim(),
         code: (formData.code || '').toUpperCase().trim(),
-        type: formData.type || 'percentage',
+        type: apiType,
         discount: Number(formData.discount) || 0,
         limit: formData.limit !== '' && formData.limit !== null ? Number(formData.limit) : 0,
-        description: (formData.description || '').trim() || `${formData.discount}% discount on selected purchases`,
+        description: (formData.description || '').trim() || (isPercentage ? `${formData.discount}% discount on selected purchases` : `₹${formData.discount} discount on selected purchases`),
         oncePerCustomer: true,
         status: formData.status || 'active'
       };
@@ -150,11 +155,11 @@ export default function UpdateCouponModal({ isOpen, coupon, onClose, onSuccess, 
                 <label>Discount Type *</label>
                 <select
                   className="form-control-input"
-                  value={formData.type}
+                  value={formData.type === 'fixed' ? 'amount' : formData.type}
                   onChange={(e) => set('type', e.target.value)}
                 >
                   <option value="percentage">Percentage Discount (%)</option>
-                  <option value="fixed">Fixed Amount (₹)</option>
+                  <option value="amount">Fixed Amount (₹)</option>
                 </select>
               </div>
               <div className="form-group">

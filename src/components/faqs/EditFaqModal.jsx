@@ -136,8 +136,8 @@ export default function EditFaqModal({ faq, isOpen, onClose, onSave }) {
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
-                  <option value="active">Active (Visible)</option>
-                  <option value="inactive">Inactive (Hidden)</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>

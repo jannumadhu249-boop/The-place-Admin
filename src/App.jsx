@@ -27,13 +27,24 @@ import Policies from './components/content/Policies';
 
 import { initialOrders } from './data/mockData';
 import { URLS } from './url';
+import { PermissionProvider, usePermissions } from './context/PermissionContext';
 import './styles/index.css';
 import './styles/components.css';
+
+// Guard for checking module view permission before rendering page
+function ModuleGuard({ module, children }) {
+  const { canView, firstAccessibleRoute } = usePermissions();
+  if (!canView(module)) {
+    return <Navigate to={firstAccessibleRoute || '/profile'} replace />;
+  }
+  return children;
+}
 
 // Protected route wrapper
 function ProtectedApp({ orders, onUpdateOrderStatus, onLogout, user }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { firstAccessibleRoute } = usePermissions();
 
   // Derive active section from current pathname for sidebar highlight
   const pathToSection = (pathname) => {
@@ -55,33 +66,33 @@ function ProtectedApp({ orders, onUpdateOrderStatus, onLogout, user }) {
       onLogout={() => { onLogout(); navigate('/login'); }}
     >
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard onNavigateSection={handleSelectSection} />} />
-        <Route path="/categories" element={<Categories />} />
-        <Route path="/sub-categories" element={<SubCategories />} />
-        <Route path="/subcategories" element={<SubCategories />} />
-        <Route path="/cuisines" element={<Cuisines />} />
-        <Route path="/orders" element={<OrdersLayout orders={orders} onUpdateStatus={onUpdateOrderStatus} />} />
-        <Route path="/orders/:tab" element={<OrdersLayout orders={orders} onUpdateStatus={onUpdateOrderStatus} />} />
-        <Route path="/restaurants" element={<Restaurants />} />
-        <Route path="/food" element={<FoodManagement />} />
-        <Route path="/zone" element={<ZoneSetup />} />
-        <Route path="/coupons" element={<Coupons />} />
-        <Route path="/banners" element={<Banners />} />
-        <Route path="/notifications" element={<PushNotifications />} />
-        <Route path="/disbursement" element={<DisbursementManagement />} />
-        <Route path="/reports" element={<ReportManagement />} />
-        <Route path="/employee" element={<EmployeeManagement />} />
-        <Route path="/employee/:tab" element={<EmployeeManagement />} />
-        <Route path="/departments" element={<Departments />} />
-        <Route path="/faqs" element={<Faqs />} />
-        <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/contact-us" element={<ContactUs />} />
-        <Route path="/policies" element={<Policies />} />
-        <Route path="/policies/:tab" element={<Policies />} />
-        <Route path="/delivery" element={<DeliveryManagement />} />
+        <Route path="/" element={<Navigate to={firstAccessibleRoute || "/dashboard"} replace />} />
+        <Route path="/dashboard" element={<ModuleGuard module="dashboard"><Dashboard onNavigateSection={handleSelectSection} /></ModuleGuard>} />
+        <Route path="/categories" element={<ModuleGuard module="categories"><Categories /></ModuleGuard>} />
+        <Route path="/sub-categories" element={<ModuleGuard module="sub-categories"><SubCategories /></ModuleGuard>} />
+        <Route path="/subcategories" element={<ModuleGuard module="sub-categories"><SubCategories /></ModuleGuard>} />
+        <Route path="/cuisines" element={<ModuleGuard module="cuisines"><Cuisines /></ModuleGuard>} />
+        <Route path="/orders" element={<ModuleGuard module="orders"><OrdersLayout orders={orders} onUpdateStatus={onUpdateOrderStatus} /></ModuleGuard>} />
+        <Route path="/orders/:tab" element={<ModuleGuard module="orders"><OrdersLayout orders={orders} onUpdateStatus={onUpdateOrderStatus} /></ModuleGuard>} />
+        <Route path="/restaurants" element={<ModuleGuard module="restaurants"><Restaurants /></ModuleGuard>} />
+        <Route path="/food" element={<ModuleGuard module="food"><FoodManagement /></ModuleGuard>} />
+        <Route path="/zone" element={<ModuleGuard module="zone"><ZoneSetup /></ModuleGuard>} />
+        <Route path="/coupons" element={<ModuleGuard module="coupons"><Coupons /></ModuleGuard>} />
+        <Route path="/banners" element={<ModuleGuard module="banners"><Banners /></ModuleGuard>} />
+        <Route path="/notifications" element={<ModuleGuard module="notifications"><PushNotifications /></ModuleGuard>} />
+        <Route path="/disbursement" element={<ModuleGuard module="disbursement"><DisbursementManagement /></ModuleGuard>} />
+        <Route path="/reports" element={<ModuleGuard module="reports"><ReportManagement /></ModuleGuard>} />
+        <Route path="/employee" element={<ModuleGuard module="employee"><EmployeeManagement /></ModuleGuard>} />
+        <Route path="/employee/:tab" element={<ModuleGuard module="employee"><EmployeeManagement /></ModuleGuard>} />
+        <Route path="/departments" element={<ModuleGuard module="departments"><Departments /></ModuleGuard>} />
+        <Route path="/faqs" element={<ModuleGuard module="faqs"><Faqs /></ModuleGuard>} />
+        <Route path="/about-us" element={<ModuleGuard module="about-us"><AboutUs /></ModuleGuard>} />
+        <Route path="/contact-us" element={<ModuleGuard module="contact-us"><ContactUs /></ModuleGuard>} />
+        <Route path="/policies" element={<ModuleGuard module="policies"><Policies /></ModuleGuard>} />
+        <Route path="/policies/:tab" element={<ModuleGuard module="policies"><Policies /></ModuleGuard>} />
+        <Route path="/delivery" element={<ModuleGuard module="delivery"><DeliveryManagement /></ModuleGuard>} />
         <Route path="/profile" element={<Profile user={user} onLogout={() => { onLogout(); navigate('/login'); }} />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to={firstAccessibleRoute || "/dashboard"} replace />} />
       </Routes>
     </AdminLayout>
   );
@@ -127,18 +138,33 @@ export default function App() {
               ? (pic.startsWith('http://') || pic.startsWith('https://') || pic.startsWith('data:') ? pic : URLS.ImageUrl + pic)
               : null;
 
-            const freshData = {
-              id: p._id || '',
-              name: p.name || 'Admin',
-              email: p.email || '',
-              phone: p.phone || '',
-              role: p.department || p.role || 'Super Admin',
-              avatar: fullAvatar,
-              location: p.address || p.location || '',
-            };
-            setUser((prev) => ({ ...prev, ...freshData }));
             const storage = localStorage.getItem('admin_token') ? localStorage : sessionStorage;
-            storage.setItem('admin_user', JSON.stringify(freshData));
+            const prevStored = JSON.parse(storage.getItem('admin_user') || '{}');
+
+            const isSuper = (
+              p.email === 'gopi@gmail.com' ||
+              prevStored.email === 'gopi@gmail.com' ||
+              p.department === 'Admin'
+            );
+
+            const mergedUser = {
+              ...prevStored,
+              id: p._id || prevStored.id || '',
+              name: p.name || prevStored.name || (isSuper ? 'Admin' : 'Staff Member'),
+              email: p.email || prevStored.email || '',
+              phone: p.phone || prevStored.phone || '',
+              location: p.address || p.location || prevStored.location || '',
+              avatar: fullAvatar || prevStored.avatar,
+              role: prevStored.role || (isSuper ? 'Super Admin' : 'Staff Member'),
+              roleName: prevStored.roleName || (isSuper ? 'Super Admin' : ''),
+              roleId: prevStored.roleId || '',
+              rolesAndPermission: (Array.isArray(prevStored.rolesAndPermission) && prevStored.rolesAndPermission.length > 0)
+                ? prevStored.rolesAndPermission
+                : (isSuper ? ['*'] : [])
+            };
+
+            setUser(mergedUser);
+            storage.setItem('admin_user', JSON.stringify(mergedUser));
           }
         })
         .catch(() => {});
@@ -208,12 +234,14 @@ export default function App() {
           element={
             isAuthenticated
               ? (
-                <ProtectedApp
-                  orders={orders}
-                  onUpdateOrderStatus={handleUpdateOrderStatus}
-                  onLogout={handleLogout}
-                  user={user}
-                />
+                <PermissionProvider user={user}>
+                  <ProtectedApp
+                    orders={orders}
+                    onUpdateOrderStatus={handleUpdateOrderStatus}
+                    onLogout={handleLogout}
+                    user={user}
+                  />
+                </PermissionProvider>
               )
               : <Navigate to="/login" replace />
           }

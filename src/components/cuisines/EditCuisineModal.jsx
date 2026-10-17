@@ -1,17 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import { X, CheckCircle, Utensils, Upload, Image as ImageIcon, Flame } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { X, CheckCircle, Utensils, Upload, Image as ImageIcon, Flame, Loader2 } from 'lucide-react';
+import { URLS } from '../../url';
+
+const FALLBACK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YWIyNTM0NGY2NWU0OWY4ZmVmNjc3ZjQiLCJwYXNzd29yZCI6IiQyYiQxMCRCd092b3lZRm9hTVBBSWxnQmRMSlhlazdSL2gyYWJkMXFESTN0V2dJNkJWM25KR0U1R1lzeSIsInBob25lIjoiOTg3NjU0MzIxMCIsImVtYWlsIjoiZ29waUBnbWFpbC5jb20iLCJpYXQiOjE3OTAwNzE3NzEsImV4cCI6MTgyMTYwNzc3MX0.WSJnq7uArEqOISptoH-1PJAJZWBI15UE4l6cyyh7dkY';
+
+const getAuthHeader = () => {
+  const token =
+    localStorage.getItem('admin_token') ||
+    sessionStorage.getItem('admin_token') ||
+    localStorage.getItem('token') ||
+    FALLBACK_TOKEN;
+  return token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+};
 
 export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
   const [formData, setFormData] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (cuisine) {
+      const isInactive = String(cuisine.status || '').toLowerCase() === 'inactive';
       setFormData({
         ...cuisine,
+        name: cuisine.name || '',
         priority: cuisine.priority || 1,
         isPopular: Boolean(cuisine.isPopular),
-        status: cuisine.status || 'Active'
+        status: isInactive ? 'inactive' : 'active'
       });
+      setImageFile(null);
+      if (cuisine.image && typeof cuisine.image === 'string' && cuisine.image.trim() !== '') {
+        if (cuisine.image.startsWith('http://') || cuisine.image.startsWith('https://') || cuisine.image.startsWith('data:')) {
+          setImagePreview(cuisine.image);
+        } else {
+          const base = (URLS.ImageUrl || 'http://16.113.133.178:3000').replace(/\/+$/, '');
+          const clean = cuisine.image.replace(/^\/+/, '').replace(/\\/g, '/');
+          setImagePreview(`${base}/${clean}`);
+        }
+      } else {
+        setImagePreview('');
+      }
+      setError('');
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }, [cuisine]);
 
@@ -20,21 +53,53 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
   const handleFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+    setImageFile(file);
     const reader = new FileReader();
     reader.onload = () => {
-      setFormData(prev => ({ ...prev, image: reader.result }));
+      setImagePreview(reader.result);
     };
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave({
-      ...formData,
-      priority: Number(formData.priority) || 1
-    });
-    onClose();
+    setError('');
+    setLoading(true);
+    const id = formData._id || formData.id;
+    try {
+      const fd = new FormData();
+      fd.append('name', formData.name.trim());
+      fd.append('priority', String(formData.priority || 1));
+      fd.append('status', formData.status || 'active');
+      if (formData.isPopular !== undefined) {
+        fd.append('isPopular', String(Boolean(formData.isPopular)));
+      }
+      if (imageFile instanceof File) {
+        fd.append('image', imageFile);
+      }
+
+      const res = await fetch(`${URLS.UpdateCuisine}${id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: getAuthHeader()
+        },
+        body: fd
+      });
+      const data = await res.json();
+      if (res.ok && (data.success || data.status)) {
+        const updated = data.data || data.cuisineType || data.result || {
+          ...formData
+        };
+        onSave({ ...formData, ...updated });
+        onClose();
+      } else {
+        setError(data.message || 'Failed to update cuisine. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -52,7 +117,7 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
             <div>
               <h3 style={{ margin: 0, fontSize: 18 }}>Edit Cuisine Details</h3>
               <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
-                {formData.id} &bull; <span style={{ fontWeight: 600, color: '#0f172a' }}>{formData.name}</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{formData.name}</span>
               </p>
             </div>
           </div>
@@ -63,6 +128,17 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
 
         <form onSubmit={handleSubmit}>
           <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+
+            {/* Error Message */}
+            {error && (
+              <div style={{
+                padding: '10px 14px', borderRadius: 8,
+                background: '#fef2f2', border: '1px solid #fecaca',
+                color: '#dc2626', fontSize: 13
+              }}>
+                {error}
+              </div>
+            )}
 
             {/* Name & Priority */}
             <div className="modal-grid">
@@ -90,18 +166,6 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
               </div>
             </div>
 
-            {/* Description */}
-            <div className="form-group">
-              <label>Description / Culinary Notes</label>
-              <textarea
-                rows="2"
-                className="form-control-input"
-                style={{ resize: 'vertical' }}
-                value={formData.description || ''}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              />
-            </div>
-
             {/* Image Preview & Upload */}
             <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
               <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -113,8 +177,16 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
                   background: '#e2e8f0', border: '1px solid #cbd5e1',
                   overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
                 }}>
-                  {formData.image ? (
-                    <img src={formData.image} alt="Cuisine" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  {imagePreview ? (
+                    <img
+                      src={imagePreview}
+                      alt="Cuisine"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = '';
+                      }}
+                    />
                   ) : (
                     <ImageIcon size={24} color="#94a3b8" />
                   )}
@@ -124,20 +196,18 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
                     type="file"
                     accept="image/*"
                     id="edit-cuisine-img-upload"
+                    ref={fileInputRef}
                     style={{ display: 'none' }}
                     onChange={handleFileUpload}
                   />
                   <label htmlFor="edit-cuisine-img-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
-                    <Upload size={13} /> Change Image File
+                    <Upload size={13} /> {imageFile ? 'Change Selected File' : 'Change Image File'}
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Or paste direct image URL"
-                    className="form-control-input"
-                    style={{ fontSize: 12, padding: '6px 10px' }}
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  />
+                  {imageFile && (
+                    <span style={{ display: 'block', fontSize: 11.5, color: '#16a34a', fontWeight: 500 }}>
+                      Selected: {imageFile.name}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -168,8 +238,8 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
                   value={formData.status}
                   onChange={(e) => setFormData({ ...formData, status: e.target.value })}
                 >
-                  <option value="Active">Active</option>
-                  <option value="Inactive">Inactive</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
             </div>
@@ -177,11 +247,14 @@ export default function EditCuisineModal({ cuisine, isOpen, onClose, onSave }) {
           </div>
 
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={loading}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              <CheckCircle size={15} /> Save Changes
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading
+                ? <><Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> Saving...</>
+                : <><CheckCircle size={15} /> Save Changes</>
+              }
             </button>
           </div>
         </form>

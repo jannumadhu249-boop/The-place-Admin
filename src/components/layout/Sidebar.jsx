@@ -25,10 +25,12 @@ import {
   FileText
 } from 'lucide-react';
 import '../../styles/layout.css';
+import { usePermissions } from '../../context/PermissionContext';
 
 export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { canView } = usePermissions();
 
   const pathToSection = (pathname) => {
     const p = pathname.replace('/', '').split('/')[0];
@@ -117,36 +119,50 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
 
       {/* Nav List */}
       <div className="sidebar-nav">
-        {navGroups.map((group, gIdx) => (
-          <div key={gIdx}>
-            {!isCollapsed && (
-              <div className="sidebar-category">{group.group}</div>
-            )}
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              const isActive = currentSection === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`sidebar-link ${isActive ? 'active' : ''}`}
-                  onClick={() => navigate(`/${item.id}`)}
-                  title={isCollapsed ? item.label : undefined}
-                >
-                  <Icon size={18} />
-                  {!isCollapsed && (
-                    <>
-                      <span>{item.label}</span>
-                      {item.badge && (
-                        <span className="sidebar-link-badge">{item.badge}</span>
-                      )}
-                    </>
-                  )}
-                </button>
-              );
-            })}
+        {navGroups
+          .map(group => ({
+            ...group,
+            items: group.items.filter(item => canView(item.id))
+          }))
+          .filter(group => group.items.length > 0)
+          .map((group, gIdx) => (
+            <div key={gIdx}>
+              {!isCollapsed && (
+                <div className="sidebar-category">{group.group}</div>
+              )}
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const isActive = currentSection === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`sidebar-link ${isActive ? 'active' : ''}`}
+                    onClick={() => navigate(`/${item.id}`)}
+                    title={isCollapsed ? item.label : undefined}
+                  >
+                    <Icon size={18} />
+                    {!isCollapsed && (
+                      <>
+                        <span>{item.label}</span>
+                        {item.badge && (
+                          <span className="sidebar-link-badge">{item.badge}</span>
+                        )}
+                      </>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+
+        {/* If employee has no permissions assigned */}
+        {!isCollapsed && navGroups.every(g => g.items.filter(item => canView(item.id)).length === 0) && (
+          <div style={{ padding: '24px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 12 }}>
+            <p style={{ margin: 0, fontWeight: 600 }}>No permissions assigned.</p>
+            <p style={{ margin: '4px 0 0', fontSize: 11 }}>Please contact Super Admin.</p>
           </div>
-        ))}
+        )}
       </div>
 
       {/* Sidebar Footer — admin info only, no logout */}

@@ -15,22 +15,22 @@ import OfflinePaymentsOrders from './OfflinePaymentsOrders';
 
 export default function OrdersLayout({ orders, onUpdateStatus }) {
   const navigate = useNavigate();
-  const { tab } = useParams(); // e.g. /orders/pending → tab = 'pending'
+  const { tab } = useParams();
   const activeTab = tab || 'all';
 
   const orderTabs = [
     { id: 'all', label: 'All Orders', count: orders.length },
-    { id: 'scheduled', label: 'Scheduled', count: orders.filter(o => o.status === 'Scheduled').length },
+    // { id: 'scheduled', label: 'Scheduled', count: orders.filter(o => o.status === 'Scheduled').length },
     { id: 'pending', label: 'Pending', count: orders.filter(o => o.status === 'pending').length },
     { id: 'accepted', label: 'Accepted', count: orders.filter(o => o.status === 'accepted').length },
     { id: 'processing', label: 'Processing', count: orders.filter(o => o.status === 'processing').length },
     { id: 'food-on-the-way', label: 'Food on the Way', count: orders.filter(o => o.status === 'Food on the way').length },
     { id: 'delivered', label: 'Delivered', count: orders.filter(o => o.status === 'Delivered').length },
     { id: 'canceled', label: 'Canceled', count: orders.filter(o => o.status === 'Canceled').length },
-    { id: 'payment-failed', label: 'Payment Failed', count: orders.filter(o => o.status === 'Payment Failed').length },
+    // { id: 'payment-failed', label: 'Payment Failed', count: orders.filter(o => o.status === 'Payment Failed').length },
     { id: 'refunded', label: 'Refunded', count: orders.filter(o => o.status === 'Refunded').length },
-    { id: 'dine-in', label: 'Dine In', count: orders.filter(o => o.status === 'Dine in' || o.orderType === 'Dine In').length },
-    { id: 'offline-payments', label: 'Offline Payments', count: orders.filter(o => o.status === 'Offline Payments' || o.paymentMethod?.toLowerCase().includes('cash')).length }
+    // { id: 'dine-in', label: 'Dine In', count: orders.filter(o => o.status === 'Dine in' || o.orderType === 'Dine In').length },
+    // { id: 'offline-payments', label: 'Offline Payments', count: orders.filter(o => o.status === 'Offline Payments' || o.paymentMethod?.toLowerCase().includes('cash')).length }
   ];
 
   return (

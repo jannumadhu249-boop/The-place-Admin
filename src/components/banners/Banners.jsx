@@ -84,7 +84,7 @@ export default function Banners() {
       formData.append('link', banner.link || '');
       formData.append('fromDate', banner.fromDate || '');
       formData.append('toDate', banner.toDate || '');
-      if (banner.zone) formData.append('zone', banner.zone);
+      if (banner.zoneId) formData.append('zoneId', banner.zoneId);
 
       const res = await fetch(URLS.UpdateBanners + banner._id, {
         method: 'PUT',
@@ -139,7 +139,7 @@ export default function Banners() {
     return (
       (b.name || '').toLowerCase().includes(term) ||
       (b.link || '').toLowerCase().includes(term) ||
-      (b.zone || '').toLowerCase().includes(term)
+      (b.zoneId || '').toLowerCase().includes(term)
     );
   });
 
@@ -250,7 +250,7 @@ export default function Banners() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <MapPin size={13} color="#0284c7" />
                       <span style={{ fontWeight: 600, color: '#334155' }}>Target Zone:</span>
-                      <span>{banner.zone || 'All Zones'}</span>
+                      <span>{banner.zoneName || banner.zone || (banner.zoneId ? banner.zoneId : '')}</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <LinkIcon size={13} color="#94a3b8" />

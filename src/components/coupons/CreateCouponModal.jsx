@@ -51,15 +51,18 @@ export default function CreateCouponModal({ isOpen, onClose, onSuccess, onError 
     e.preventDefault();
     setSubmitting(true);
     try {
+      const isPercentage = formData.type === 'percentage';
+      const apiType = isPercentage ? 'percentage' : 'amount';
+
       const payload = {
         fromDate: toISODateString(formData.fromDate),
         toDate: toISODateString(formData.toDate),
         name: (formData.name || '').trim(),
         code: (formData.code || '').toUpperCase().trim(),
-        type: formData.type || 'percentage',
+        type: apiType,
         discount: Number(formData.discount) || 0,
         limit: formData.limit !== '' && formData.limit !== null ? Number(formData.limit) : 0,
-        description: (formData.description || '').trim() || `${formData.discount}% discount on selected purchases`,
+        description: (formData.description || '').trim() || (isPercentage ? `${formData.discount}% discount on selected purchases` : `₹${formData.discount} discount on selected purchases`),
         oncePerCustomer: true,
         status: formData.status || 'active'
       };
@@ -144,11 +147,11 @@ export default function CreateCouponModal({ isOpen, onClose, onSuccess, onError 
                 <label>Discount Type *</label>
                 <select
                   className="form-control-input"
-                  value={formData.type}
+                  value={formData.type === 'fixed' ? 'amount' : formData.type}
                   onChange={(e) => set('type', e.target.value)}
                 >
                   <option value="percentage">Percentage Discount (%)</option>
-                  <option value="fixed">Fixed Amount (₹)</option>
+                  <option value="amount">Fixed Amount (₹)</option>
                 </select>
               </div>
               <div className="form-group">

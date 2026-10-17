@@ -52,11 +52,65 @@ export default function Login({ onLogin }) {
       // Store token
       const token = data?.token || data?.data?.token || '';
       const u = data?.user || data?.data?.user || data?.data || {};
+
+      const isSuper = (
+        u.email === 'gopi@gmail.com' ||
+        email.trim().toLowerCase() === 'gopi@gmail.com' ||
+        u.department === 'Admin' ||
+        (Array.isArray(data?.rolesAndPermission) && data?.rolesAndPermission.some(r => r.accessAll === true))
+      );
+
+      let roleName = isSuper ? 'Super Admin' : (u.department || 'Staff Member');
+      let roleId = '';
+      let perms = isSuper ? ['*'] : [];
+
+      // If employee, retrieve their assigned role and permissions
+      if (!isSuper && u._id) {
+        try {
+          const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+          const staffRes = await fetch(URLS.GetByIdEmpolyee, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              authorization: authHeader
+            },
+            body: JSON.stringify({ staffId: u._id, id: u._id })
+          });
+          const staffData = await staffRes.json();
+          const staff = staffData?.staff || staffData?.data;
+          if (staff) {
+            roleId = staff.roleId || '';
+            roleName = staff.roleName || roleName;
+
+            if (roleId) {
+              const roleRes = await fetch(URLS.GetByIdRole, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  authorization: authHeader
+                },
+                body: JSON.stringify({ roleId, id: roleId })
+              });
+              const roleData = await roleRes.json();
+              const roleObj = roleData?.role || roleData?.data;
+              if (roleObj && Array.isArray(roleObj.rolesAndPermission)) {
+                perms = roleObj.rolesAndPermission;
+              }
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('Could not fetch staff role during login:', fetchErr);
+        }
+      }
+
       const userData = {
         id: u._id || '',
-        email: u.email || email,
-        name: u.name || 'Admin',
-        role: u.department || u.role || 'Super Admin',
+        email: u.email || email.trim(),
+        name: u.name || (isSuper ? 'Admin' : 'Staff Member'),
+        role: roleName,
+        roleName: roleName,
+        roleId: roleId,
+        rolesAndPermission: perms,
         phone: u.phone || '',
         avatar: u.image
           ? (u.image.startsWith('http') ? u.image : URLS.ImageUrl + u.image)

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Plus, 
@@ -14,14 +14,23 @@ import {
   Phone, 
   Mail, 
   MapPin, 
-  AlertCircle 
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { URLS } from '../../url';
+
+const FALLBACK_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YWIyNTM0NGY2NWU0OWY4ZmVmNjc3ZjQiLCJwYXNzd29yZCI6IiQyYiQxMCRCd092b3lZRm9hTVBBSWxnQmRMSlhlazdSL2gyYWJkMXFESTN0V2dJNkJWM25KR0U1R1lzeSIsInBob25lIjoiOTg3NjU0MzIxMCIsImVtYWlsIjoiZ29waUBnbWFpbC5jb20iLCJpYXQiOjE3OTAwNzE3NzEsImV4cCI6MTgyMTYwNzc3MX0.WSJnq7uArEqOISptoH-1PJAJZWBI15UE4l6cyyh7dkY";
+
+const getAuthHeader = () => {
+  const token = localStorage.getItem("admin_token") || sessionStorage.getItem("admin_token") || FALLBACK_TOKEN;
+  return token.startsWith("Bearer ") ? token : `Bearer ${token}`;
+};
 
 export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
   const [formData, setFormData] = useState({
     name: '',
-    cuisine: '',
-    zone: '',
+    cuisineTypeId: '',
+    zoneId: '',
     address: '',
     phone: '',
     commissionRate: '15',
@@ -32,6 +41,8 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
     // Tax & Legal
     tinNumber: '',
     expiryDate: '',
+    tinNumberTwo: '',
+    tinNumberTwoDate: '',
     tinCertificate: '',
     tinCertificateName: '',
     licenceDocument: '',
@@ -41,20 +52,88 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
     ownerPhoneNumber: '',
     openingTime: '09:00',
     closingTime: '22:00',
+    status: 'active',
     // Account Information
     email: '',
     password: '',
     confirmPassword: ''
   });
 
+  // For API integration
+  const [restaurentLogo, setRestaurentLogo] = useState(null);
+  const [restaurentCover, setRestaurentCover] = useState(null);
+  const [tinCertificateFile, setTinCertificateFile] = useState(null);
+  const [licenseDocumentFile, setLicenseDocumentFile] = useState(null);
+  const [galleryFiles, setGalleryFiles] = useState([]);
+
   const [passwordError, setPasswordError] = useState('');
+  const [cuisines, setCuisines] = useState([]);
+  const [zones, setZones] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch cuisines and zones
+  useEffect(() => {
+    if (isOpen) {
+      fetchCuisines();
+      fetchZones();
+    }
+  }, [isOpen]);
+
+  const fetchCuisines = async () => {
+    try {
+      const res = await fetch(URLS.GetActiveCuisine, {
+        method: "POST",
+        headers: { authorization: getAuthHeader() }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCuisines(data.cuisineTypes || data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching cuisines:", error);
+    }
+  };
+
+  const fetchZones = async () => {
+    try {
+      const res = await fetch(URLS.GetActiveZones, {
+        method: "POST",
+        headers: { authorization: getAuthHeader() }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setZones(data.zones || data.data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching zones:", error);
+    }
+  };
+
+  const formatDateForApi = (val) => {
+    if (!val) return '';
+    const iso = val.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) return `${iso[3]}-${iso[2]}-${iso[1]}`;
+    return val;
+  };
 
   if (!isOpen) return null;
+
+  const handleGalleryUpload = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length) setGalleryFiles((prev) => [...prev, ...files]);
+  };
 
   const handleFileUpload = (field, nameField, e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Store actual file for API
+    if (field === 'logo') setRestaurentLogo(file);
+    else if (field === 'image') setRestaurentCover(file);
+    else if (field === 'tinCertificate') setTinCertificateFile(file);
+    else if (field === 'licenceDocument') setLicenseDocumentFile(file);
+
+    // Also store for preview
     const reader = new FileReader();
     reader.onload = () => {
       setFormData(prev => ({
@@ -66,28 +145,78 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
     if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
       setPasswordError('Passwords do not match. Please ensure both passwords match.');
       return;
     }
     setPasswordError('');
 
-    onAdd({
-      ...formData,
-      commissionRate: Number(formData.commissionRate) || 15,
-      rating: 5.0,
-      reviews: 1,
-      totalOrders: 0,
-      totalEarnings: '$0.00',
-      status: 'Active',
-      isOpen: true,
-      image: formData.image || 'https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=600&auto=format&fit=crop&q=80',
-      logo: formData.logo || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=150&auto=format&fit=crop&q=80',
-      address: formData.address || 'Central Culinary Quarter, NY'
-    });
-    onClose();
+    setSubmitting(true);
+    
+    try {
+      const formDataToSend = new FormData();
+      
+      // Split owner name
+      const ownerNameParts = formData.ownerName.trim().split(' ');
+      const ownerFirstName = ownerNameParts[0] || '';
+      const ownerLastName = ownerNameParts.slice(1).join(' ') || '';
+      
+      // Add text fields matching API structure
+      formDataToSend.append('restaurentName', formData.name);
+      formDataToSend.append('restaurentAddress', formData.address);
+      if (formData.cuisineTypeId) formDataToSend.append('cuisineTypeId', formData.cuisineTypeId);
+      if (formData.zoneId) formDataToSend.append('zoneId', formData.zoneId);
+      formDataToSend.append('map', formData.address);
+      formDataToSend.append('estimatedDeliveryMinimumTime', formData.estimatedDeliveryTime.split('-')[0]?.trim() || '20');
+      formDataToSend.append('estimatedDeliveryMaximunTime', formData.estimatedDeliveryTime.split('-')[1]?.replace('min', '').trim() || '30');
+      formDataToSend.append('estimatedDeliveryMinutes', formData.estimatedDeliveryTime.split('-')[0]?.trim() || '20');
+      formDataToSend.append('ownerFirstName', ownerFirstName);
+      formDataToSend.append('ownerLastName', ownerLastName);
+      formDataToSend.append('ownerPhone', formData.ownerPhoneNumber || formData.phone);
+      formDataToSend.append('tags', '[]');
+      formDataToSend.append('tinNumber', formData.tinNumber);
+      formDataToSend.append('tinExpiryDate', formatDateForApi(formData.expiryDate));
+      formDataToSend.append('tinNumberTwo', formData.tinNumberTwo);
+      formDataToSend.append('tinnumberTwoDate', formatDateForApi(formData.tinNumberTwoDate));
+      formDataToSend.append('email', formData.email);
+      formDataToSend.append('password', formData.password);
+      formDataToSend.append('confirmPassword', formData.confirmPassword);
+      formDataToSend.append('status', formData.status || 'active');
+      if (formData.openingTime) formDataToSend.append('openingTime', formData.openingTime);
+      if (formData.closingTime) formDataToSend.append('closingTime', formData.closingTime);
+
+      // Add file fields
+      if (restaurentLogo) formDataToSend.append('restaurentLogo', restaurentLogo);
+      if (restaurentCover) formDataToSend.append('restaurentCover', restaurentCover);
+      if (tinCertificateFile) formDataToSend.append('tinCertificate', tinCertificateFile);
+      if (licenseDocumentFile) formDataToSend.append('licenseDocument', licenseDocumentFile);
+      galleryFiles.forEach((file) => formDataToSend.append('images', file));
+
+      const response = await fetch(URLS.CreateRestaurant, {
+        method: 'POST',
+        headers: {
+          'authorization': getAuthHeader()
+        },
+        body: formDataToSend
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.success) {
+        onAdd();
+        onClose();
+      } else {
+        setPasswordError(data.message || 'Failed to create restaurant');
+      }
+    } catch (error) {
+      console.error('Error creating restaurant:', error);
+      setPasswordError('Network error. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const set = (field, val) => {
@@ -99,7 +228,7 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-dialog" style={{ maxWidth: 760, width: '92%' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-dialog" style={{ maxWidth: 920, width: '95%' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -150,14 +279,19 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                   </div>
                   <div className="form-group">
                     <label>Cuisine Category *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Authentic Italian, Neapolitan Pizza"
+                    <select
                       className="form-control-input"
-                      value={formData.cuisine}
-                      onChange={(e) => set('cuisine', e.target.value)}
-                    />
+                      required
+                      value={formData.cuisineTypeId}
+                      onChange={(e) => set('cuisineTypeId', e.target.value)}
+                    >
+                      <option value="">Select Cuisine Type</option>
+                      {cuisines.map((cuisine) => (
+                        <option key={cuisine._id} value={cuisine._id}>
+                          {cuisine.cuisineTypeName || cuisine.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
@@ -167,16 +301,32 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                     <select
                       className="form-control-input"
                       required
-                      value={formData.zone}
-                      onChange={(e) => set('zone', e.target.value)}
+                      value={formData.zoneId}
+                      onChange={(e) => set('zoneId', e.target.value)}
                     >
                       <option value="">Select Delivery Zone</option>
-                      <option value="Zone 1 - Downtown Core">Zone 1 - Downtown Core</option>
-                      <option value="Zone 2 - West District">Zone 2 - West District</option>
-                      <option value="Zone 3 - Midtown Central">Zone 3 - Midtown Central</option>
-                      <option value="Zone 4 - Brooklyn North">Zone 4 - Brooklyn North</option>
+                      {zones.map((zone) => (
+                        <option key={zone._id} value={zone._id}>
+                          {zone.zoneName || zone.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
+                  <div className="form-group">
+                    <label>Status *</label>
+                    <select
+                      className="form-control-input"
+                      required
+                      value={formData.status}
+                      onChange={(e) => set('status', e.target.value)}
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="modal-grid">
                   <div className="form-group">
                     <label>Platform Commission (%) *</label>
                     <input
@@ -190,9 +340,6 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                       onChange={(e) => set('commissionRate', e.target.value)}
                     />
                   </div>
-                </div>
-
-                <div className="modal-grid">
                   <div className="form-group">
                     <label>Contact Phone *</label>
                     <input
@@ -204,6 +351,9 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                       onChange={(e) => set('phone', e.target.value)}
                     />
                   </div>
+                </div>
+
+                <div className="modal-grid">
                   <div className="form-group">
                     <label>Estimated Delivery Time</label>
                     <input
@@ -227,6 +377,28 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                     onChange={(e) => set('address', e.target.value)}
                   />
                 </div>
+
+                <div className="modal-grid">
+                  <div className="form-group">
+                    <label>Daily Opening Time</label>
+                    <input
+                      type="time"
+                      className="form-control-input"
+                      value={formData.openingTime}
+                      onChange={(e) => set('openingTime', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Daily Closing Time</label>
+                    <input
+                      type="time"
+                      className="form-control-input"
+                      value={formData.closingTime}
+                      onChange={(e) => set('closingTime', e.target.value)}
+                    />
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -268,14 +440,6 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                       <label htmlFor="logo-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
                         <Upload size={13} /> Choose Logo Image
                       </label>
-                      <input
-                        type="text"
-                        placeholder="Or paste Logo Image URL"
-                        className="form-control-input"
-                        style={{ fontSize: 12, padding: '6px 10px' }}
-                        value={formData.logo}
-                        onChange={(e) => set('logo', e.target.value)}
-                      />
                     </div>
                   </div>
                 </div>
@@ -308,14 +472,6 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                       <label htmlFor="cover-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer', marginBottom: 6 }}>
                         <Upload size={13} /> Choose Banner Image
                       </label>
-                      <input
-                        type="text"
-                        placeholder="Or paste Banner Image URL"
-                        className="form-control-input"
-                        style={{ fontSize: 12, padding: '6px 10px' }}
-                        value={formData.image}
-                        onChange={(e) => set('image', e.target.value)}
-                      />
                     </div>
                   </div>
                 </div>
@@ -334,10 +490,9 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="modal-grid">
                   <div className="form-group">
-                    <label>Taxpayer Identification Number (TIN) *</label>
+                    <label>Taxpayer Identification Number (TIN)</label>
                     <input
                       type="text"
-                      required
                       placeholder="e.g. TIN-98234-881A"
                       className="form-control-input"
                       value={formData.tinNumber}
@@ -348,11 +503,10 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                   <div className="form-group">
                     <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <Calendar size={14} color="#0284c7" />
-                      <span>Licence / TIN Expiry Date *</span>
+                      <span>Licence / TIN Expiry Date</span>
                     </label>
                     <input
                       type="date"
-                      required
                       className="form-control-input"
                       value={formData.expiryDate}
                       onChange={(e) => set('expiryDate', e.target.value)}
@@ -361,10 +515,32 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                 </div>
 
                 <div className="modal-grid">
+                  <div className="form-group">
+                    <label>TIN Number Two</label>
+                    <input
+                      type="text"
+                      placeholder="Secondary TIN number"
+                      className="form-control-input"
+                      value={formData.tinNumberTwo}
+                      onChange={(e) => set('tinNumberTwo', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>TIN Number Two Expiry Date</label>
+                    <input
+                      type="date"
+                      className="form-control-input"
+                      value={formData.tinNumberTwoDate}
+                      onChange={(e) => set('tinNumberTwoDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+
+                <div className="modal-grid">
                   {/* TIN Certificate */}
                   <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
                     <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <FileText size={14} color="#059669" /> TIN Certificate (Image or Document) *
+                      <FileText size={14} color="#059669" /> TIN Certificate (Image or Document)
                     </label>
                     <p style={{ margin: '0 0 10px 0', fontSize: 11.5, color: '#64748b' }}>
                       Upload valid government Taxpayer Identification document
@@ -384,20 +560,12 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                         <FileText size={12} /> {formData.tinCertificateName}
                       </div>
                     )}
-                    <input
-                      type="text"
-                      placeholder="Or document URL link"
-                      className="form-control-input"
-                      style={{ fontSize: 12, padding: '6px 10px', marginTop: 6 }}
-                      value={formData.tinCertificate}
-                      onChange={(e) => set('tinCertificate', e.target.value)}
-                    />
                   </div>
 
                   {/* Licence Document */}
                   <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
                     <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <FileText size={14} color="#d97706" /> Licence Document *
+                      <FileText size={14} color="#d97706" /> Licence Document
                     </label>
                     <p style={{ margin: '0 0 10px 0', fontSize: 11.5, color: '#64748b' }}>
                       Upload trade business / food hygiene authority licence
@@ -417,15 +585,22 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                         <FileText size={12} /> {formData.licenceDocumentName}
                       </div>
                     )}
-                    <input
-                      type="text"
-                      placeholder="Or licence URL link"
-                      className="form-control-input"
-                      style={{ fontSize: 12, padding: '6px 10px', marginTop: 6 }}
-                      value={formData.licenceDocument}
-                      onChange={(e) => set('licenceDocument', e.target.value)}
-                    />
                   </div>
+                </div>
+
+                <div className="form-group" style={{ background: '#f8fafc', padding: 14, borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                  <label style={{ fontWeight: 600, color: '#1e293b', marginBottom: 8 }}>Additional Gallery Images</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    id="gallery-upload"
+                    style={{ display: 'none' }}
+                    onChange={handleGalleryUpload}
+                  />
+                  <label htmlFor="gallery-upload" className="btn btn-secondary" style={{ display: 'inline-flex', padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>
+                    <Upload size={13} /> {galleryFiles.length ? `Add More (${galleryFiles.length} selected)` : 'Upload Gallery Images'}
+                  </label>
                 </div>
               </div>
             </div>
@@ -459,27 +634,6 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                       className="form-control-input"
                       value={formData.ownerPhoneNumber}
                       onChange={(e) => set('ownerPhoneNumber', e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="modal-grid">
-                  <div className="form-group">
-                    <label>Daily Opening Time</label>
-                    <input
-                      type="time"
-                      className="form-control-input"
-                      value={formData.openingTime}
-                      onChange={(e) => set('openingTime', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label>Daily Closing Time</label>
-                    <input
-                      type="time"
-                      className="form-control-input"
-                      value={formData.closingTime}
-                      onChange={(e) => set('closingTime', e.target.value)}
                     />
                   </div>
                 </div>
@@ -549,11 +703,19 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
 
           {/* Footer */}
           <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={submitting}>
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
-              <Plus size={15} /> Register Partner Restaurant
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? (
+                <>
+                  <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> Creating...
+                </>
+              ) : (
+                <>
+                  <Plus size={15} /> Register Partner Restaurant
+                </>
+              )}
             </button>
           </div>
         </form>

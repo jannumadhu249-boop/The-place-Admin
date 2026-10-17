@@ -27,7 +27,7 @@ export default function CreateBannerModal({ isOpen, onClose, onSuccess, onError 
   const [priority, setPriority] = useState('1');
   const [status, setStatus] = useState('active');
   const [link, setLink] = useState('');
-  const [zone, setZone] = useState('All Zones');
+  const [zoneId, setZoneId] = useState('');
   const [zonesList, setZonesList] = useState([]);
   const [fromDate, setFromDate] = useState(new Date());
   const [toDate, setToDate] = useState(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
@@ -40,16 +40,15 @@ export default function CreateBannerModal({ isOpen, onClose, onSuccess, onError 
     if (isOpen) {
       const fetchZones = async () => {
         try {
-          const res = await fetch(URLS.GetZones, {
+          const res = await fetch(URLS.GetActiveZones, {
             method: 'POST',
             headers: {
-              authorization: getAuthHeader(),
-              'Content-Type': 'application/json'
+              authorization: getAuthHeader()
             }
           });
           const data = await res.json();
-          if (res.ok && data.zones) {
-            setZonesList(data.zones);
+          if (res.ok) {
+            setZonesList(data.zones || data.data || []);
           }
         } catch (err) {
           console.error('Failed to load zones for banner modal:', err);
@@ -66,7 +65,7 @@ export default function CreateBannerModal({ isOpen, onClose, onSuccess, onError 
       setPriority('1');
       setStatus('active');
       setLink('');
-      setZone('All Zones');
+      setZoneId('');
       setFromDate(new Date());
       setToDate(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000));
       setImageFile(null);
@@ -101,8 +100,8 @@ export default function CreateBannerModal({ isOpen, onClose, onSuccess, onError 
       formData.append('fromDate', toISODateString(fromDate));
       formData.append('toDate', toISODateString(toDate));
       formData.append('image', imageFile);
-      if (zone) {
-        formData.append('zone', zone);
+      if (zoneId) {
+        formData.append('zoneId', zoneId);
       }
 
       const res = await fetch(URLS.CreateBanners, {
@@ -265,12 +264,12 @@ export default function CreateBannerModal({ isOpen, onClose, onSuccess, onError 
                 </label>
                 <select
                   className="form-control-input"
-                  value={zone}
-                  onChange={(e) => setZone(e.target.value)}
+                  value={zoneId}
+                  onChange={(e) => setZoneId(e.target.value)}
                 >
-                  <option value="All Zones">All Zones</option>
+                  <option value="">All Zones</option>
                   {zonesList.map((z) => (
-                    <option key={z._id} value={z.name}>
+                    <option key={z._id} value={z._id}>
                       {z.name} {z.status ? `(${z.status})` : ''}
                     </option>
                   ))}
