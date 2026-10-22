@@ -15,6 +15,7 @@ import {
   Landmark, 
   BarChart3, 
   Users, 
+  UserCheck,
   Building2, 
   HelpCircle, 
   Info, 
@@ -145,6 +146,18 @@ export const RBAC_MODULES = [
       { id: 'create', label: 'Add Partner' },
       { id: 'edit', label: 'Edit / Assign' },
       { id: 'delete', label: 'Delete' }
+    ]
+  },
+  {
+    id: 'users',
+    aliases: ['customers'],
+    label: 'Customers',
+    category: 'Operations',
+    icon: UserCheck,
+    description: 'Registered customer directory, profiles, phone, addresses and account status',
+    actions: [
+      { id: 'view', label: 'View' },
+      { id: 'edit', label: 'Block / Unblock' }
     ]
   },
 

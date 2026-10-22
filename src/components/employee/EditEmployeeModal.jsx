@@ -208,7 +208,7 @@ export default function EditEmployeeModal({ employee, isOpen, onClose, onSave, o
             <div>
               <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>Edit Employee Profile</h3>
               <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>
-                ID: {formData._id} &bull; {formData.name}
+                 &bull; {formData.name}
               </p>
             </div>
           </div>

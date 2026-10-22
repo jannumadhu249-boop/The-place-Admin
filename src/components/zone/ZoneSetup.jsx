@@ -556,12 +556,12 @@ export default function ZoneSetup() {
             <thead>
               <tr>
                 <th>Zone Name</th>
-                <th>Suburbs / Neighborhoods</th>
+                {/* <th>Suburbs / Neighborhoods</th> */}
                 <th>Priority</th>
-                <th>Radius</th>
+                {/* <th>Radius</th>
                 <th>Base Fee</th>
                 <th>Per KM Fee</th>
-                <th>Min Cart</th>
+                <th>Min Cart</th> */}
                 <th>Status</th>
                 <th style={{ textAlign: 'center' }}>Actions</th>
               </tr>
@@ -591,24 +591,24 @@ export default function ZoneSetup() {
                         </div>
                       </div>
                     </td>
-                    <td>
+                    {/* <td>
                       <div style={{ fontSize: 12.5, color: '#475569', maxWidth: 220 }}>
                         {zone.Suburbs || '—'}
                       </div>
-                    </td>
+                    </td> */}
                     <td>
                       <span className="badge badge-neutral" style={{ fontWeight: 600 }}>
                         {zone.priority || '1'}
                       </span>
                     </td>
-                    <td>
+                    {/* <td>
                       <span className="badge badge-neutral" style={{ fontWeight: 600 }}>
                         {zone.operationalRadius || '10'} km
                       </span>
                     </td>
                     <td><strong>₹{zone.baseMinimumDeliveryFee || '0'}</strong></td>
                     <td><span style={{ color: '#0284c7', fontWeight: 600 }}>₹{zone.perKilometerSurcharge || '0'}/km</span></td>
-                    <td>₹{zone.minimumOrderCartAmount || '0'}</td>
+                    <td>₹{zone.minimumOrderCartAmount || '0'}</td> */}
                     <td>
                       <label className="toggle-switch">
                         <input

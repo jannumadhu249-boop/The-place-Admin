@@ -88,9 +88,23 @@ const mergeZoneLists = (activeZones, allZones, detail, listRow) => {
   );
 };
 
-function mapRestaurantToForm(r) {
+function mapRestaurantToForm(r, categoryList = [], subcategoryList = []) {
   const ownerFirst = r.ownerFirstName || '';
   const ownerLast = r.ownerLastName || '';
+
+  let catId = r.categoryId || '';
+  if (typeof catId === 'object' && catId !== null) catId = catId._id || '';
+  if (!catId && categoryList.length > 0) catId = String(categoryList[0]._id || categoryList[0].id || '');
+
+  let subId = r.subcategoryId || '';
+  if (typeof subId === 'object' && subId !== null) subId = subId._id || '';
+  const matchingSubs = subcategoryList.filter(
+    (s) => String(s.categoryId) === String(catId)
+  );
+  if (!subId || !matchingSubs.some((s) => String(s._id || s.id) === String(subId))) {
+    subId = matchingSubs.length > 0 ? String(matchingSubs[0]._id || matchingSubs[0].id) : '';
+  }
+
   return {
     _id: r._id || r.id,
     name: r.restaurentName || r.name || '',
@@ -98,8 +112,8 @@ function mapRestaurantToForm(r) {
     cuisineTypeId: r.cuisineTypeId || '',
     zoneId: r.zoneId ? String(r.zoneId) : '',
     zoneName: r.zoneName || '',
-    categoryId: r.categoryId || '',
-    subcategoryId: r.subcategoryId || '',
+    categoryId: catId,
+    subcategoryId: subId,
     phone: r.ownerPhone || r.phone || '',
     estimatedDeliveryTime: buildEstimatedDeliveryLabel(r),
     estimatedDeliveryMinimumTime: r.estimatedDeliveryMinimumTime || '',
@@ -118,8 +132,8 @@ function mapRestaurantToForm(r) {
     ownerPhoneNumber: r.ownerPhone || r.ownerPhoneNumber || '',
     email: r.email || '',
     status: (r.status || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active',
-    openingTime: r.openingTime || r.dailyOpeningTime || r.openTime || '',
-    closingTime: r.closingTime || r.dailyClosingTime || r.closeTime || '',
+    dailyOpenTime: r.dailyOpenTime || '',
+    dailyCloseTime: r.dailyCloseTime || '',
     map: r.map || r.restaurentAddress || ''
   };
 }
@@ -128,6 +142,8 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
   const [formData, setFormData] = useState(null);
   const [cuisines, setCuisines] = useState([]);
   const [zones, setZones] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [passwordError, setPasswordError] = useState('');
@@ -153,10 +169,20 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
       setGalleryFiles([]);
 
       try {
-        const [cuisineRes, activeZoneRes, allZoneRes, detailRes] = await Promise.all([
+        const [cuisineRes, activeZoneRes, allZoneRes, categoryRes, subcategoryRes, detailRes] = await Promise.all([
           fetch(URLS.GetActiveCuisine, { method: 'POST', headers: { authorization: getAuthHeader() } }),
           fetch(URLS.GetActiveZones, { method: 'POST', headers: { authorization: getAuthHeader() } }),
           fetch(URLS.GetZones, {
+            method: 'POST',
+            headers: { authorization: getAuthHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          }),
+          fetch(URLS.GetCategories, {
+            method: 'POST',
+            headers: { authorization: getAuthHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+          }),
+          fetch(URLS.GetSubCategories, {
             method: 'POST',
             headers: { authorization: getAuthHeader(), 'Content-Type': 'application/json' },
             body: JSON.stringify({})
@@ -174,6 +200,8 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
         const cuisineData = await cuisineRes.json();
         const activeZoneData = await activeZoneRes.json();
         const allZoneData = await allZoneRes.json();
+        const categoryData = await categoryRes.json();
+        const subcategoryData = await subcategoryRes.json();
         const detailData = await detailRes.json();
 
         if (cancelled) return;
@@ -193,6 +221,14 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
         const allZones = allZoneData.zones || allZoneData.data || [];
         const zoneList = mergeZoneLists(activeZones, allZones, detail, restaurant);
 
+        const categoryList = Array.isArray(categoryData)
+          ? categoryData
+          : (categoryData?.category || categoryData?.categories || categoryData?.data || []);
+
+        const subcategoryList = Array.isArray(subcategoryData)
+          ? subcategoryData
+          : (subcategoryData?.subcategory || subcategoryData?.subcategories || subcategoryData?.data || []);
+
         if (detail.cuisineTypeId && !cuisineList.some((c) => String(c._id) === String(detail.cuisineTypeId))) {
           cuisineList = [
             ...cuisineList,
@@ -202,7 +238,9 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
 
         setCuisines(cuisineList);
         setZones(zoneList);
-        setFormData(mapRestaurantToForm(detail));
+        setCategories(categoryList);
+        setSubcategories(subcategoryList);
+        setFormData(mapRestaurantToForm(detail, categoryList, subcategoryList));
       } catch {
         if (!cancelled) {
           setFormData(mapRestaurantToForm(restaurant));
@@ -254,6 +292,15 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
     setFormData((prev) => ({ ...prev, galleryUrls: [...(prev.galleryUrls || []), ...previews] }));
   };
 
+  const handleCategoryChange = (catId) => {
+    const matching = subcategories.filter((s) => String(s.categoryId) === String(catId));
+    setFormData((prev) => ({
+      ...prev,
+      categoryId: catId,
+      subcategoryId: matching[0] ? String(matching[0]._id || matching[0].id) : ''
+    }));
+  };
+
   const appendUpdateFields = (fd) => {
     const ownerParts = (formData.ownerName || '').trim().split(/\s+/);
     const ownerFirstName = ownerParts[0] || '';
@@ -291,8 +338,8 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
     fd.append('tinnumberTwoDate', formatDateForApi(formData.tinNumberTwoDate));
     fd.append('email', formData.email);
     fd.append('status', formData.status || 'active');
-    if (formData.openingTime) fd.append('openingTime', formData.openingTime);
-    if (formData.closingTime) fd.append('closingTime', formData.closingTime);
+    if (formData.dailyOpenTime) fd.append('dailyOpenTime', formData.dailyOpenTime);
+    if (formData.dailyCloseTime) fd.append('dailyCloseTime', formData.dailyCloseTime);
 
     if (logoFile) fd.append('restaurentLogo', logoFile);
     if (coverFile) fd.append('restaurentCover', coverFile);
@@ -304,6 +351,16 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
   const handleSubmit = async (e) => {
     e.preventDefault();
     setPasswordError('');
+
+    if (!formData.categoryId) {
+      setPasswordError('Please select a Category.');
+      return;
+    }
+    if (!formData.subcategoryId) {
+      setPasswordError('Please select a Subcategory.');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -385,7 +442,7 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
                       <input type="text" required className="form-control-input" value={formData.name} onChange={(e) => set('name', e.target.value)} />
                     </div>
                     <div className="form-group">
-                      <label>Cuisine Category *</label>
+                      <label>Cuisine Type *</label>
                       <select
                         className="form-control-input"
                         required
@@ -398,6 +455,44 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
                             {c.cuisineTypeName || c.name}
                           </option>
                         ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="modal-grid">
+                    <div className="form-group">
+                      <label>Category *</label>
+                      <select
+                        className="form-control-input"
+                        required
+                        value={formData.categoryId || ''}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
+                      >
+                        <option value="">Select Category</option>
+                        {categories.map((c) => (
+                          <option key={c._id || c.id} value={c._id || c.id}>
+                            {c.name || c.categoryName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Subcategory *</label>
+                      <select
+                        className="form-control-input"
+                        required
+                        value={formData.subcategoryId || ''}
+                        onChange={(e) => set('subcategoryId', e.target.value)}
+                        disabled={!formData.categoryId}
+                      >
+                        <option value="">Select Subcategory</option>
+                        {subcategories
+                          .filter((s) => String(s.categoryId) === String(formData.categoryId))
+                          .map((s) => (
+                            <option key={s._id || s.id} value={s._id || s.id}>
+                              {s.name || s.subcategoryName}
+                            </option>
+                          ))}
                       </select>
                     </div>
                   </div>
@@ -461,8 +556,8 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
                       <input
                         type="time"
                         className="form-control-input"
-                        value={formData.openingTime}
-                        onChange={(e) => set('openingTime', e.target.value)}
+                        value={formData.dailyOpenTime}
+                        onChange={(e) => set('dailyOpenTime', e.target.value)}
                       />
                     </div>
                     <div className="form-group">
@@ -470,8 +565,8 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
                       <input
                         type="time"
                         className="form-control-input"
-                        value={formData.closingTime}
-                        onChange={(e) => set('closingTime', e.target.value)}
+                        value={formData.dailyCloseTime}
+                        onChange={(e) => set('dailyCloseTime', e.target.value)}
                       />
                     </div>
                   </div>

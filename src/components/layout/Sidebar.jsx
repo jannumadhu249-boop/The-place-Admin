@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -22,15 +22,55 @@ import {
   HelpCircle,
   Info,
   PhoneCall,
-  FileText
+  FileText,
+  UserCheck
 } from 'lucide-react';
 import '../../styles/layout.css';
 import { usePermissions } from '../../context/PermissionContext';
+import { URLS } from '../../url';
+
+const FALLBACK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YWJkM2RkYjAzMGEyODdlMzhhMWRlZmYiLCJwaG9uZSI6Ijg1MDAyNDEwOTMiLCJpYXQiOjE3OTA3ODcwNDUsImV4cCI6MTgyMjMyMzA0NX0.8Y91D3P6whWIu8Cy2hCO-ivQiIwHXPhPQ41DznvwomM';
 
 export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
   const navigate = useNavigate();
   const location = useLocation();
   const { canView } = usePermissions();
+  const [orderCount, setOrderCount] = useState(null);
+
+  const fetchOrdersCount = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || localStorage.getItem('token') || FALLBACK_TOKEN;
+      const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      const res = await fetch(URLS.GetAllOrders, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: authHeader
+        },
+        body: JSON.stringify({ bookingStatus: 'pending' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success !== false) {
+        const count = data.totalBookings !== undefined ? data.totalBookings : (data.data?.length || 0);
+        setOrderCount(count);
+      }
+    } catch (err) {
+      console.error('Failed to fetch pending orders count for sidebar:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrdersCount();
+
+    const handleUpdate = () => fetchOrdersCount();
+    window.addEventListener('orders-updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+
+    return () => {
+      window.removeEventListener('orders-updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+    };
+  }, [fetchOrdersCount, location.pathname]);
 
   const pathToSection = (pathname) => {
     const p = pathname.replace('/', '').split('/')[0];
@@ -56,7 +96,13 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
     {
       group: 'Operations',
       items: [
-        { id: 'orders', label: 'Orders', icon: ShoppingBag, badge: '11' },
+        { 
+          id: 'orders', 
+          label: 'Orders', 
+          icon: ShoppingBag, 
+          badge: orderCount !== null && orderCount !== undefined ? String(orderCount) : null 
+        },
+        { id: 'users', label: 'Customers', icon: UserCheck },
         { id: 'restaurants', label: 'Restaurants', icon: Store },
         { id: 'food', label: 'Food Management', icon: UtensilsCrossed },
         { id: 'zone', label: 'Zone Setup', icon: MapPin },

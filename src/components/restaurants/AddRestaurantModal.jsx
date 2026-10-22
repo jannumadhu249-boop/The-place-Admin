@@ -50,8 +50,8 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
     // Owner & Operations
     ownerName: '',
     ownerPhoneNumber: '',
-    openingTime: '09:00',
-    closingTime: '22:00',
+    dailyOpenTime: '',
+    dailyCloseTime: '',
     status: 'active',
     // Account Information
     email: '',
@@ -185,8 +185,8 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
       formDataToSend.append('password', formData.password);
       formDataToSend.append('confirmPassword', formData.confirmPassword);
       formDataToSend.append('status', formData.status || 'active');
-      if (formData.openingTime) formDataToSend.append('openingTime', formData.openingTime);
-      if (formData.closingTime) formDataToSend.append('closingTime', formData.closingTime);
+      if (formData.dailyOpenTime) formDataToSend.append('dailyOpenTime', formData.dailyOpenTime);
+      if (formData.dailyCloseTime) formDataToSend.append('dailyCloseTime', formData.dailyCloseTime);
 
       // Add file fields
       if (restaurentLogo) formDataToSend.append('restaurentLogo', restaurentLogo);
@@ -384,8 +384,8 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                     <input
                       type="time"
                       className="form-control-input"
-                      value={formData.openingTime}
-                      onChange={(e) => set('openingTime', e.target.value)}
+                      value={formData.dailyOpenTime}
+                      onChange={(e) => set('dailyOpenTime', e.target.value)}
                     />
                   </div>
                   <div className="form-group">
@@ -393,8 +393,8 @@ export default function AddRestaurantModal({ isOpen, onClose, onAdd }) {
                     <input
                       type="time"
                       className="form-control-input"
-                      value={formData.closingTime}
-                      onChange={(e) => set('closingTime', e.target.value)}
+                      value={formData.dailyCloseTime}
+                      onChange={(e) => set('dailyCloseTime', e.target.value)}
                     />
                   </div>
                 </div>

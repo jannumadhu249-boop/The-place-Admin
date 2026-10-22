@@ -24,6 +24,7 @@ import Faqs from './components/faqs/Faqs';
 import AboutUs from './components/content/AboutUs';
 import ContactUs from './components/content/ContactUs';
 import Policies from './components/content/Policies';
+import Users from './components/users/Users';
 
 import { initialOrders } from './data/mockData';
 import { URLS } from './url';
@@ -74,6 +75,8 @@ function ProtectedApp({ orders, onUpdateOrderStatus, onLogout, user }) {
         <Route path="/cuisines" element={<ModuleGuard module="cuisines"><Cuisines /></ModuleGuard>} />
         <Route path="/orders" element={<ModuleGuard module="orders"><OrdersLayout orders={orders} onUpdateStatus={onUpdateOrderStatus} /></ModuleGuard>} />
         <Route path="/orders/:tab" element={<ModuleGuard module="orders"><OrdersLayout orders={orders} onUpdateStatus={onUpdateOrderStatus} /></ModuleGuard>} />
+        <Route path="/users" element={<ModuleGuard module="users"><Users /></ModuleGuard>} />
+        <Route path="/customers" element={<ModuleGuard module="users"><Users /></ModuleGuard>} />
         <Route path="/restaurants" element={<ModuleGuard module="restaurants"><Restaurants /></ModuleGuard>} />
         <Route path="/food" element={<ModuleGuard module="food"><FoodManagement /></ModuleGuard>} />
         <Route path="/zone" element={<ModuleGuard module="zone"><ZoneSetup /></ModuleGuard>} />

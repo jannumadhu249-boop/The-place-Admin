@@ -122,5 +122,18 @@ export  const URLS = {
     CreatePushNotifications: base_url + "v1/place/admin/notification/add",
     DeletePushNotifications: base_url + "v1/place/admin/notification/delete",
 
+    //User's ( Customer's )
+    GetUsers: base_url + "v1/place/admin/docs/getusers",
+    GetActiveUsers: base_url + "v1/place/admin/docs/get-active-users",
+    GetByIdUsers: base_url + "v1/place/admin/docs/get-user-byid",
+    UpdateUserStatus: base_url + "v1/place/admin/docs/update-user-status",
+
+    //Order's
+    GetAllOrders: base_url + "v1/place/admin/booking/getall",
+    GetOrderById: base_url + "v1/place/admin/booking/getbyid",
+
+    //Dashboard
+    GetDashboard: base_url + "v1/place/admin/get-dashboard",
+
 
 }

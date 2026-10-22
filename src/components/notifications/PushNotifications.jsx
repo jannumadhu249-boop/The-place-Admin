@@ -24,8 +24,10 @@ const getAuthHeader = () => {
 export default function PushNotifications() {
   const [notifications, setNotifications] = useState([]);
   const [zones, setZones] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingZones, setLoadingZones] = useState(false);
+  const [loadingUsers, setLoadingUsers] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
@@ -34,7 +36,7 @@ export default function PushNotifications() {
   // Form state
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
-  const [targetAudience, setTargetAudience] = useState('All Customers');
+  const [targetAudience, setTargetAudience] = useState('ALL');
   const [zone, setZone] = useState('');
 
   // Status alerts
@@ -75,6 +77,30 @@ export default function PushNotifications() {
     }
   }, []);
 
+  // Fetch active users for target audience
+  const fetchActiveUsers = useCallback(async () => {
+    setLoadingUsers(true);
+    try {
+      const res = await fetch(URLS.GetActiveUsers, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: getAuthHeader()
+        },
+        body: JSON.stringify({})
+      });
+      const data = await res.json();
+      if (res.ok && data.success !== false) {
+        const list = data.user || data.users || data.data || [];
+        setActiveUsers(list);
+      }
+    } catch (err) {
+      console.error('Error fetching active users:', err);
+    } finally {
+      setLoadingUsers(false);
+    }
+  }, []);
+
   // Fetch notifications
   const fetchNotifications = useCallback(async () => {
     setLoading(true);
@@ -106,7 +132,8 @@ export default function PushNotifications() {
   useEffect(() => {
     fetchNotifications();
     fetchActiveZones();
-  }, [fetchNotifications, fetchActiveZones]);
+    fetchActiveUsers();
+  }, [fetchNotifications, fetchActiveZones, fetchActiveUsers]);
 
   // Handle broadcast submission
   const handleBroadcast = async (e) => {
@@ -116,13 +143,25 @@ export default function PushNotifications() {
       return;
     }
 
+    let selectedUsers = [];
+    if (targetAudience === 'ALL') {
+      selectedUsers = activeUsers.map((u) => u._id).filter(Boolean);
+    } else if (targetAudience) {
+      selectedUsers = [targetAudience];
+    }
+
+    if (!selectedUsers.length) {
+      setErrorMsg('No active recipient users found to send notification.');
+      return;
+    }
+
     setSubmitting(true);
     setErrorMsg(null);
     setSuccessMsg(null);
 
     const payload = {
       sendTo: 'User',
-      users: ['6aad059864ce0e6d97aca0f9'],
+      users: selectedUsers,
       title: title.trim(),
       description: message.trim()
     };
@@ -328,17 +367,23 @@ export default function PushNotifications() {
 
             <div className="modal-grid">
               <div className="form-group">
-                <label>Target Audience Segment</label>
+                <label>Target Audience Segment (Active Users)</label>
                 <select
                   className="form-control-input"
                   value={targetAudience}
                   onChange={(e) => setTargetAudience(e.target.value)}
-                  disabled={submitting}
+                  disabled={submitting || loadingUsers}
                 >
-                  <option value="All Customers">All Customers (Registered)</option>
-                  <option value="Delivery Fleet Drivers">Delivery Fleet Drivers</option>
-                  <option value="Restaurant Merchants">Restaurant Merchants</option>
-                  <option value="VIP Members">VIP Club Members</option>
+                  <option value="ALL">All Active Users ({activeUsers.length})</option>
+                  {activeUsers.length > 0 && (
+                    <optgroup label="Specific Active User">
+                      {activeUsers.map((u) => (
+                        <option key={u._id} value={u._id}>
+                          {u.name ? `${u.name} (${u.phone || u.email || u._id})` : `User (${u.phone || u._id})`}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 

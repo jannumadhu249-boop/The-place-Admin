@@ -25,16 +25,55 @@ const resolveAvatar = (userObj) => {
   return `${URLS.ImageUrl}${pic.startsWith('/') ? pic.slice(1) : pic}`;
 };
 
+const FALLBACK_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2YWJkM2RkYjAzMGEyODdlMzhhMWRlZmYiLCJwaG9uZSI6Ijg1MDAyNDEwOTMiLCJpYXQiOjE3OTA3ODcwNDUsImV4cCI6MTgyMjMyMzA0NX0.8Y91D3P6whWIu8Cy2hCO-ivQiIwHXPhPQ41DznvwomM';
+
 export default function Topbar({ user, onLogout }) {
   const navigate = useNavigate();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [liveOrderCount, setLiveOrderCount] = useState(null);
 
   // User state synced with props, storage, and API
   const [currentUser, setCurrentUser] = useState(() => user || getStoredUser());
 
   const profileRef = useRef(null);
   const notifRef = useRef(null);
+
+  // Fetch live orders count from API
+  const fetchLiveOrdersCount = async () => {
+    try {
+      const token = localStorage.getItem('admin_token') || sessionStorage.getItem('admin_token') || localStorage.getItem('token') || FALLBACK_TOKEN;
+      const authHeader = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+      const res = await fetch(URLS.GetAllOrders, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          authorization: authHeader
+        },
+        body: JSON.stringify({ bookingStatus: 'pending' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success !== false) {
+        const count = data.totalBookings !== undefined ? data.totalBookings : (data.data?.length || 0);
+        setLiveOrderCount(count);
+      }
+    } catch (err) {
+      console.error('Topbar failed to fetch live orders count:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveOrdersCount();
+
+    const handleUpdate = () => fetchLiveOrdersCount();
+    window.addEventListener('orders-updated', handleUpdate);
+    window.addEventListener('focus', handleUpdate);
+
+    return () => {
+      window.removeEventListener('orders-updated', handleUpdate);
+      window.removeEventListener('focus', handleUpdate);
+    };
+  }, []);
 
   // Sync with prop changes
   useEffect(() => {
@@ -150,9 +189,10 @@ export default function Topbar({ user, onLogout }) {
           type="button" 
           className="live-order-indicator"
           onClick={() => navigate('/orders')}
+          title="View Live Orders"
         >
           <span className="live-pulse-dot" />
-          <span>11 Live Orders</span>
+          <span>{liveOrderCount !== null ? `${liveOrderCount} Live Orders` : 'Live Orders'}</span>
         </button>
 
         {/* Notifications Popover Trigger */}
