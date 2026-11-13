@@ -34,7 +34,7 @@ export default function DeliveryManagement() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [vehicleFilter, setVehicleFilter] = useState('All');
   const [zoneFilter, setZoneFilter] = useState('All');
-  const [viewMode, setViewMode] = useState('table'); // 'table' | 'grid'
+  const [viewMode, setViewMode] = useState('table');
   
   // Modals state
   const [isAddOpen, setIsAddOpen] = useState(false);

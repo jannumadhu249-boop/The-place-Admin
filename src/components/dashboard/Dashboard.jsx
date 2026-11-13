@@ -5,6 +5,7 @@ import {
   ShoppingBag,
   Store,
   DollarSign,
+  IndianRupee,
   Clock,
   ChevronRight,
   ArrowUpRight,
@@ -269,7 +270,7 @@ export default function Dashboard() {
         <div className="metric-card">
           <div className="metric-card-top">
             <div className="metric-icon-box" style={{ background: '#fff1f2', color: '#be123c' }}>
-              <DollarSign size={22} />
+              <IndianRupee size={22} />
             </div>
             <span className="metric-badge-trend trend-up">
               <ArrowUpRight size={13} /> Completed
@@ -309,7 +310,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="metric-val">
-              {Number(data?.activeRestaurants || 0)}
+              {Number(data?.totalRestaurants || 0)}
             </div>
             <div className="metric-title">Active Partner Restaurants</div>
           </div>

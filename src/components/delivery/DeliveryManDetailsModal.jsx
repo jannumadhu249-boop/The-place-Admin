@@ -123,7 +123,7 @@ export default function DeliveryManDetailsModal({ driver, isOpen, onClose, onSet
             <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: 10, border: '1px solid #e2e8f0', textAlign: 'center' }}>
               <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600 }}>Today's Earnings</span>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', marginTop: 2 }}>
-                {driver.earningsToday || '$0.00'}
+                {driver.earningsToday || '₹ 0.00'}
               </div>
               <span style={{ fontSize: 10.5, color: '#0284c7', fontWeight: 700 }}>+ Tips Included</span>
             </div>
@@ -131,7 +131,7 @@ export default function DeliveryManDetailsModal({ driver, isOpen, onClose, onSet
             <div style={{ background: '#ffffff', padding: '12px 14px', borderRadius: 10, border: '1px solid #e2e8f0', textAlign: 'center' }}>
               <span style={{ fontSize: 11.5, color: '#64748b', fontWeight: 600 }}>Cash in Hand</span>
               <div style={{ fontSize: 18, fontWeight: 800, color: '#be123c', marginTop: 2 }}>
-                {driver.cashInHand || '$42.50'}
+                {driver.cashInHand || '₹ 42.50'}
               </div>
               <button
                 type="button"

@@ -324,7 +324,7 @@ export default function Restaurants() {
                       </td>
                       <td>
                         <span style={{ fontSize: 13, color: "#16a34a", fontWeight: 700 }}>
-                          {rest.totalEarnings || "$0.00"}
+                          ₹ {rest.totalEarnings || "0.00"}
                         </span>
                       </td>
                       <td>

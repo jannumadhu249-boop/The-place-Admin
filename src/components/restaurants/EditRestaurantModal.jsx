@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X,
   CheckCircle,
@@ -88,21 +88,36 @@ const mergeZoneLists = (activeZones, allZones, detail, listRow) => {
   );
 };
 
+function getSubCategoryParentId(s) {
+  if (!s) return '';
+  const c = s.categoryId ?? s.category ?? s.category_id ?? s.parentCategoryId;
+  if (!c) return '';
+  if (typeof c === 'object') {
+    return String(c._id || c.id || '');
+  }
+  return String(c);
+}
+
 function mapRestaurantToForm(r, categoryList = [], subcategoryList = []) {
   const ownerFirst = r.ownerFirstName || '';
   const ownerLast = r.ownerLastName || '';
 
-  let catId = r.categoryId || '';
-  if (typeof catId === 'object' && catId !== null) catId = catId._id || '';
+  let catId = r.categoryId || r.category?._id || (typeof r.category === 'string' ? r.category : '') || '';
+  if (typeof catId === 'object' && catId !== null) catId = catId._id || catId.id || '';
   if (!catId && categoryList.length > 0) catId = String(categoryList[0]._id || categoryList[0].id || '');
 
-  let subId = r.subcategoryId || '';
-  if (typeof subId === 'object' && subId !== null) subId = subId._id || '';
-  const matchingSubs = subcategoryList.filter(
-    (s) => String(s.categoryId) === String(catId)
-  );
-  if (!subId || !matchingSubs.some((s) => String(s._id || s.id) === String(subId))) {
-    subId = matchingSubs.length > 0 ? String(matchingSubs[0]._id || matchingSubs[0].id) : '';
+  let subId = r.subcategoryId || r.subCategoryId || r.subcategory?._id || r.subCategory?._id || (typeof r.subcategory === 'string' ? r.subcategory : '') || '';
+  if (typeof subId === 'object' && subId !== null) subId = subId._id || subId.id || '';
+
+  const matchingSubs = subcategoryList.filter((s) => {
+    const parentId = getSubCategoryParentId(s);
+    return parentId ? parentId === String(catId) : false;
+  });
+
+  if (!subId && matchingSubs.length > 0) {
+    subId = String(matchingSubs[0]._id || matchingSubs[0].id || '');
+  } else if (!subId && subcategoryList.length > 0) {
+    subId = String(subcategoryList[0]._id || subcategoryList[0].id || '');
   }
 
   return {
@@ -153,6 +168,17 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
   const [tinCertificateFile, setTinCertificateFile] = useState(null);
   const [licenseDocumentFile, setLicenseDocumentFile] = useState(null);
   const [galleryFiles, setGalleryFiles] = useState([]);
+
+  const availableSubcategories = useMemo(() => {
+    if (!Array.isArray(subcategories) || subcategories.length === 0) return [];
+    const currentCatId = String(formData?.categoryId || '');
+    if (!currentCatId) return subcategories;
+    const filtered = subcategories.filter((s) => {
+      const parentId = getSubCategoryParentId(s);
+      return parentId ? parentId === currentCatId : false;
+    });
+    return filtered.length > 0 ? filtered : subcategories;
+  }, [subcategories, formData?.categoryId]);
 
   useEffect(() => {
     if (!isOpen || !restaurant) return;
@@ -223,11 +249,11 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
 
         const categoryList = Array.isArray(categoryData)
           ? categoryData
-          : (categoryData?.category || categoryData?.categories || categoryData?.data || []);
+          : (categoryData?.categories || categoryData?.category || categoryData?.data?.categories || categoryData?.data || categoryData?.result || []);
 
         const subcategoryList = Array.isArray(subcategoryData)
           ? subcategoryData
-          : (subcategoryData?.subcategory || subcategoryData?.subcategories || subcategoryData?.data || []);
+          : (subcategoryData?.subCategories || subcategoryData?.subcategories || subcategoryData?.subcategory || subcategoryData?.data?.subCategories || subcategoryData?.data?.subcategories || subcategoryData?.data || subcategoryData?.result || []);
 
         if (detail.cuisineTypeId && !cuisineList.some((c) => String(c._id) === String(detail.cuisineTypeId))) {
           cuisineList = [
@@ -293,11 +319,16 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
   };
 
   const handleCategoryChange = (catId) => {
-    const matching = subcategories.filter((s) => String(s.categoryId) === String(catId));
+    const matching = subcategories.filter((s) => {
+      const parentId = getSubCategoryParentId(s);
+      return parentId ? parentId === String(catId) : false;
+    });
     setFormData((prev) => ({
       ...prev,
       categoryId: catId,
-      subcategoryId: matching[0] ? String(matching[0]._id || matching[0].id) : ''
+      subcategoryId: matching[0]
+        ? String(matching[0]._id || matching[0].id)
+        : (matching.length === 0 && subcategories.length > 0 ? String(subcategories[0]._id || subcategories[0].id) : '')
     }));
   };
 
@@ -446,7 +477,7 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
                       <select
                         className="form-control-input"
                         required
-                        value={formData.cuisineTypeId}
+                        value={formData.cuisineTypeId || ''}
                         onChange={(e) => set('cuisineTypeId', e.target.value)}
                       >
                         <option value="">Select Cuisine Type</option>
@@ -483,16 +514,18 @@ export default function EditRestaurantModal({ restaurant, isOpen, onClose, onSav
                         required
                         value={formData.subcategoryId || ''}
                         onChange={(e) => set('subcategoryId', e.target.value)}
-                        disabled={!formData.categoryId}
+                        disabled={loadingDetail}
                       >
                         <option value="">Select Subcategory</option>
-                        {subcategories
-                          .filter((s) => String(s.categoryId) === String(formData.categoryId))
-                          .map((s) => (
-                            <option key={s._id || s.id} value={s._id || s.id}>
-                              {s.name || s.subcategoryName}
+                        {availableSubcategories.map((s) => {
+                          const id = s._id || s.id || (typeof s === 'string' ? s : '');
+                          const label = s.name || s.subcategoryName || s.subCategoryName || s.title || id;
+                          return (
+                            <option key={id} value={id}>
+                              {label}
                             </option>
-                          ))}
+                          );
+                        })}
                       </select>
                     </div>
                   </div>

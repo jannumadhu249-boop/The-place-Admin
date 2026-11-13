@@ -620,7 +620,7 @@ export const deliveryFleetData = [
     status: "On Delivery",
     currentOrder: "ORD-9820",
     completedOrders: 1420,
-    earningsToday: "$114.50",
+    earningsToday: "₹ 114.50",
     batteryOrFuel: "84%",
     zone: "Zone 1 - Downtown Core"
   },
@@ -634,7 +634,7 @@ export const deliveryFleetData = [
     status: "On Delivery",
     currentOrder: "ORD-9819",
     completedOrders: 980,
-    earningsToday: "$88.00",
+    earningsToday: "₹ 88.00",
     batteryOrFuel: "65%",
     zone: "Zone 2 - West District"
   },
@@ -648,7 +648,7 @@ export const deliveryFleetData = [
     status: "On Delivery",
     currentOrder: "ORD-9818",
     completedOrders: 2310,
-    earningsToday: "$142.00",
+    earningsToday: "₹ 142.00",
     batteryOrFuel: "92%",
     zone: "Zone 3 - Midtown Central"
   },
@@ -662,7 +662,7 @@ export const deliveryFleetData = [
     status: "Available",
     currentOrder: null,
     completedOrders: 750,
-    earningsToday: "$54.00",
+    earningsToday: "₹ 54.00",
     batteryOrFuel: "78%",
     zone: "Zone 4 - Brooklyn North"
   },
@@ -676,7 +676,7 @@ export const deliveryFleetData = [
     status: "Offline",
     currentOrder: null,
     completedOrders: 1840,
-    earningsToday: "$0.00",
+    earningsToday: "₹ 0.00",
     batteryOrFuel: "100%",
     zone: "Zone 1 - Downtown Core"
   }

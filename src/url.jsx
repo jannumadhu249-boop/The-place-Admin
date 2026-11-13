@@ -1,4 +1,4 @@
-const base_url = "http://16.113.133.178:3000/"
+const base_url = "http://40.192.68.118:3000/"
 
 export  const URLS = {
 

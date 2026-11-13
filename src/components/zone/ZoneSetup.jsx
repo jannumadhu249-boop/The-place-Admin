@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   MapPin, Plus, Navigation, Layers, DollarSign,
-  Store, Bike, X, Check, Edit2, Trash2, RefreshCw, AlertCircle, Map
+  Store, Bike, X, Check, Edit2, Trash2, RefreshCw, AlertCircle, Map,
+  IndianRupee
 } from 'lucide-react';
 import ZoneMap from './GoogleMap';
 import SuburbsAutocomplete, { calculatePolygonFromLocations } from './SuburbsAutocomplete';
@@ -433,10 +434,10 @@ export default function ZoneSetup() {
           </div>
         </div>
 
-        <div className="metric-card">
+        {/* <div className="metric-card">
           <div className="metric-card-top">
             <div className="metric-icon-box" style={{ background: '#fef3c7', color: '#b45309' }}>
-              <DollarSign size={22} />
+              <IndianRupee size={22} />
             </div>
             <span className="metric-badge-trend trend-up">Base Fee</span>
           </div>
@@ -446,7 +447,7 @@ export default function ZoneSetup() {
             </div>
             <div className="metric-title">Avg Base Delivery Fee</div>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Interactive Delivery Zone Google Map Card */}

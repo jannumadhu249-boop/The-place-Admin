@@ -130,7 +130,7 @@ export default function Sidebar({ isCollapsed, onToggleCollapse, user }) {
       group: 'Pages & Support',
       items: [
         { id: 'faqs', label: 'Help & FAQs', icon: HelpCircle },
-        { id: 'about-us', label: 'About Us', icon: Info },
+        // { id: 'about-us', label: 'About Us', icon: Info },
         { id: 'contact-us', label: 'Contact Us', icon: PhoneCall },
         { id: 'policies', label: 'Legal & Policies', icon: FileText }
       ]

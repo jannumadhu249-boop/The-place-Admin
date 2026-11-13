@@ -74,8 +74,8 @@ export default function OrderTable({ title, orders = [], bookingExcell = [], onU
           'Phone Number': item.userPhone || match?.userPhone || '',
           'Restaurant Name': item.restaurentName || match?.restaurentName || '',
           'Products': item.products || '',
-          'Booking Status': item.bookingStatus || match?.bookingStatus || 'pending',
-          'Payment Status': item.paymentStatus || match?.paymentStatus || 'paid',
+          'Booking Status': item.bookingStatus || match?.bookingStatus || '',
+          'Payment Status': item.paymentStatus || match?.paymentStatus || '',
           'Transaction ID': item.transactionId || match?.transactionId || '',
           'Total Amount': item.totalAmount ?? match?.totalAmount ?? 0,
           'Discount Amount': item.discountAmount ?? match?.discountAmount ?? 0
