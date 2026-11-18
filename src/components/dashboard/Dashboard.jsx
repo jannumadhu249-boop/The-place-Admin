@@ -310,7 +310,7 @@ export default function Dashboard() {
           </div>
           <div>
             <div className="metric-val">
-              {Number(data?.totalRestaurants || 0)}
+              {Number(data?.activeRestaurants || 0)}
             </div>
             <div className="metric-title">Active Partner Restaurants</div>
           </div>
